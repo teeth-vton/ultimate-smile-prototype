@@ -2,16 +2,25 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Ultimate Smile 3D AR - Auto Scale Fix</title>
+  <title>Ultimate Smile Design - Live AR Calibrated</title>
   <style>
-    body { margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #111; overflow: hidden; }
+    body { margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #000; font-family: sans-serif; overflow: hidden; }
     .container { position: relative; width: 640px; height: 480px; }
+    
+    /* Hide the raw video and the 3D canvas from the user. We only show the final composited canvas. */
     video { display: none; }
-    #videoCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: scaleX(-1); border-radius: 12px; z-index: 1; }
-    #threeCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: scaleX(-1); border-radius: 12px; z-index: 2; pointer-events: none; }
-    .loading { position: absolute; color: white; font-family: sans-serif; z-index: 10; left: 50%; top: 50%; transform: translate(-50%, -50%); }
+    #threeCanvas { display: none; } 
+    
+    /* This is the final mirrored output the user actually sees */
+    #mainCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: scaleX(-1); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    
+    /* UX Overlay */
+    #uiOverlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; flex-direction: column; justify-content: center; align-items: center; border-radius: 12px; z-index: 10; color: white; }
+    #startButton { padding: 15px 30px; font-size: 18px; font-weight: bold; background: #fff; color: #000; border: none; border-radius: 30px; cursor: pointer; transition: 0.3s; }
+    #startButton:hover { background: #ddd; transform: scale(1.05); }
+    #statusText { margin-top: 20px; font-size: 16px; display: none; }
   </style>
-  
+
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/vision_bundle.mjs" type="module"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
@@ -19,148 +28,187 @@
 <body>
 
   <div class="container">
-    <div class="loading" id="loadingText">Loading Engine...</div>
+    <canvas id="mainCanvas" width="640" height="480"></canvas>
+    
+    <div id="uiOverlay">
+      <button id="startButton">Start Ultimate Smile AR</button>
+      <div id="statusText">Please look directly at the camera...</div>
+    </div>
+
     <video id="webcam" autoplay playsinline></video>
-    <canvas id="videoCanvas" width="640" height="480"></canvas>
     <canvas id="threeCanvas" width="640" height="480"></canvas>
   </div>
 
   <script type="module">
     import { FaceLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/vision_bundle.mjs";
 
+    // DOM Elements
     const video = document.getElementById("webcam");
-    const videoCanvas = document.getElementById("videoCanvas");
-    const videoCtx = videoCanvas.getContext("2d");
+    const mainCanvas = document.getElementById("mainCanvas");
+    const mainCtx = mainCanvas.getContext("2d");
     const threeCanvas = document.getElementById("threeCanvas");
     
+    const startButton = document.getElementById("startButton");
+    const statusText = document.getElementById("statusText");
+    const uiOverlay = document.getElementById("uiOverlay");
+
     // --- 1. THREE.JS 3D SETUP ---
     const scene = new THREE.Scene();
-    const camera = new THREE.OrthographicCamera(0, 640, 0, 480, -2000, 2000);
+    // Origin is exactly the center of the screen
+    const camera = new THREE.OrthographicCamera(-320, 320, 240, -240, -2000, 2000);
     camera.position.z = 1000;
 
     const renderer = new THREE.WebGLRenderer({ canvas: threeCanvas, alpha: true, antialias: true });
     renderer.setSize(640, 480);
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
     scene.add(ambientLight);
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
     directionalLight.position.set(0, 1, 1);
     scene.add(directionalLight);
 
     let teethGroup = new THREE.Group();
-    let modelOriginalWidth = 1; // Default fallback
+    let modelOriginalWidth = 1;
 
     const loader = new THREE.GLTFLoader();
     loader.load('teeth.glb', function (gltf) {
       const teethModel = gltf.scene;
       
-      // Make them bright white e.max material
+      // Softer, more realistic material so it doesn't look like a glowing white block
       teethModel.traverse((child) => {
         if (child.isMesh) {
           child.material = new THREE.MeshStandardMaterial({
-            color: 0xffffff,
-            roughness: 0.2,
+            color: 0xeeeeee, // Soft natural white (A1/B1)
+            roughness: 0.3,
             metalness: 0.1,
           });
         }
       });
 
-      // --- THE FIX: AUTO-CENTERING & MEASURING ---
-      // 1. Measure the exact 3D bounding box of the downloaded file
       const box = new THREE.Box3().setFromObject(teethModel);
       const center = box.getCenter(new THREE.Vector3());
       const size = box.getSize(new THREE.Vector3());
-      
-      // 2. Save the true width of the model to calculate exact scaling later
       modelOriginalWidth = size.x;
 
-      // 3. Force the model to the exact center of its own coordinate system
+      // Force 3D model geometry to absolute center
       teethModel.position.x = -center.x;
       teethModel.position.y = -center.y;
       teethModel.position.z = -center.z;
 
-      // 4. Add the centered model to a Group so we can move the Group safely
       teethGroup.add(teethModel);
       scene.add(teethGroup);
-      
       teethGroup.visible = false; 
     });
 
     // --- 2. MEDIAPIPE AI SETUP ---
     let faceLandmarker;
     let lastVideoTime = -1;
+    let isCalibrating = false;
+    let isARActive = false;
+    let calibrationFrames = 0;
+
+    // Exact indices for the inner lip line
+    const INNER_LIP = [78, 191, 80, 81, 82, 13, 312, 311, 310, 415, 308, 324, 318, 402, 317, 14, 87, 178, 88, 95];
 
     async function initializeAI() {
       const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm");
       faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
-        baseOptions: { 
-          modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task", 
-          delegate: "GPU" 
-        },
+        baseOptions: { modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task", delegate: "GPU" },
         runningMode: "VIDEO",
         numFaces: 1
       });
-      startCamera();
     }
 
-    async function startCamera() {
+    // --- UX FLOW LOGIC ---
+    startButton.addEventListener("click", async () => {
+      startButton.style.display = "none";
+      statusText.style.display = "block";
+      statusText.innerText = "Starting Camera...";
+      
       const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
       video.srcObject = stream;
-      video.addEventListener("loadeddata", renderLoop);
-      document.getElementById("loadingText").style.display = "none";
-    }
+      video.addEventListener("loadeddata", () => {
+        statusText.innerText = "Detecting Facial Structure...";
+        isCalibrating = true;
+        renderLoop();
+      });
+    });
 
-    // --- 3. EXACT SYNC RENDER LOOP ---
-    async function renderLoop() {
-      videoCtx.drawImage(video, 0, 0, videoCanvas.width, videoCanvas.height);
-
+    // --- 3. RENDERING & MASKING LOOP ---
+    function renderLoop() {
       if (video.currentTime !== lastVideoTime) {
         lastVideoTime = video.currentTime;
         const results = faceLandmarker.detectForVideo(video, performance.now());
 
-        if (results.faceLandmarks && results.faceLandmarks.length > 0 && teethGroup.children.length > 0) {
+        // Step 1: Calibration Phase
+        if (isCalibrating && results.faceLandmarks && results.faceLandmarks.length > 0) {
+          calibrationFrames++;
+          let percent = Math.min(100, Math.round((calibrationFrames / 30) * 100));
+          statusText.innerText = `Mapping Teeth... ${percent}%`;
+          
+          if (calibrationFrames >= 30) {
+            isCalibrating = false;
+            isARActive = true;
+            uiOverlay.style.display = "none"; // Hide overlay, start AR
+          }
+        }
+
+        // Always draw the real user to the main canvas first
+        mainCtx.drawImage(video, 0, 0, 640, 480);
+
+        // Step 2: AR Render Phase
+        if (isARActive && results.faceLandmarks && results.faceLandmarks.length > 0) {
           const landmarks = results.faceLandmarks[0];
           
-          // MediaPipe Key Landmarks
           const leftCorner = landmarks[78];
           const rightCorner = landmarks[308];
           const topLipInner = landmarks[13];
           const bottomLipInner = landmarks[14];
 
-          // Calculate mouth dimensions in real pixels
-          const mouthWidthPixels = (rightCorner.x - leftCorner.x) * 640;
-          const mouthHeightPixels = (bottomLipInner.y - topLipInner.y) * 480;
+          const mouthWidthPx = (rightCorner.x - leftCorner.x) * 640;
+          const mouthHeightPx = (bottomLipInner.y - topLipInner.y) * 480;
 
-          // Only show teeth if mouth is slightly open
-          if (mouthHeightPixels > 8) {
+          if (mouthHeightPx > 5) {
             teethGroup.visible = true;
 
-            // 1. EXACT POSITIONING: Center between the lip corners
+            // Align coordinates to Three.js world
             const centerX = ((leftCorner.x + rightCorner.x) / 2) * 640;
             const centerY = ((topLipInner.y + bottomLipInner.y) / 2) * 480;
-            teethGroup.position.set(centerX, centerY, 0);
+            teethGroup.position.set(centerX - 320, 240 - centerY, 0);
 
-            // 2. EXACT SCALING: Target width / Original Model Width
-            // We multiply by 1.1 so it slightly tucks behind the corners of the lips naturally
-            const exactScale = (mouthWidthPixels * 1.1) / modelOriginalWidth;
+            // Scale to exact mouth width (with a 5% buffer to tuck into corners)
+            const exactScale = (mouthWidthPx * 1.05) / modelOriginalWidth;
             teethGroup.scale.set(exactScale, exactScale, exactScale);
 
-            // 3. EXACT ROTATION (Yaw, Pitch, Roll)
-            // Yaw: Head turning left/right
+            // Rotate based on head turn
             const yaw = Math.atan2(rightCorner.z - leftCorner.z, rightCorner.x - leftCorner.x);
-            // Roll: Head tilting side to side
             const roll = Math.atan2(rightCorner.y - leftCorner.y, rightCorner.x - leftCorner.x);
-            
             teethGroup.rotation.y = yaw;
-            teethGroup.rotation.z = -roll; // Inverse roll to match mirror effect
+            teethGroup.rotation.z = -roll; // Inverse for mirror
 
+            // 1. Render the 3D teeth to the hidden 3D canvas
+            renderer.render(scene, camera);
+
+            // 2. THE MASKING MAGIC: Cut a hole in the 2D canvas exactly where the lips open
+            mainCtx.save();
+            mainCtx.beginPath();
+            INNER_LIP.forEach((idx, i) => {
+              const pt = landmarks[idx];
+              if (i === 0) mainCtx.moveTo(pt.x * 640, pt.y * 480);
+              else mainCtx.lineTo(pt.x * 640, pt.y * 480);
+            });
+            mainCtx.closePath();
+            mainCtx.clip(); // Everything drawn after this point ONLY appears inside the mouth
+
+            // 3. Draw the 3D teeth onto the main canvas. Because of the clip above, they won't spill onto the lips.
+            mainCtx.drawImage(threeCanvas, 0, 0, 640, 480);
+            mainCtx.restore();
           } else {
             teethGroup.visible = false;
           }
         }
       }
       
-      renderer.render(scene, camera);
       window.requestAnimationFrame(renderLoop);
     }
 
