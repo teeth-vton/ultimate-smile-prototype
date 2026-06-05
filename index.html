@@ -2,20 +2,15 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Ultimate Smile Design - Live AR Calibrated</title>
+  <title>Ultimate Smile Design - Auto-Splitting Single GLB AR</title>
   <style>
     body { margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #000; font-family: sans-serif; overflow: hidden; }
     .container { position: relative; width: 640px; height: 480px; }
     
-    /* Hide the raw video and the 3D canvas from the user. We only show the final composited canvas. */
-    video { display: none; }
-    #threeCanvas { display: none; } 
-    
-    /* This is the final mirrored output the user actually sees */
+    video, #threeCanvas { display: none; } 
     #mainCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: scaleX(-1); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
     
-    /* UX Overlay */
-    #uiOverlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; flex-direction: column; justify-content: center; align-items: center; border-radius: 12px; z-index: 10; color: white; }
+    #uiOverlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; flex-direction: column; justify-content: center; align-items: center; border-radius: 12px; z-index: 10; color: white; }
     #startButton { padding: 15px 30px; font-size: 18px; font-weight: bold; background: #fff; color: #000; border: none; border-radius: 30px; cursor: pointer; transition: 0.3s; }
     #startButton:hover { background: #ddd; transform: scale(1.05); }
     #statusText { margin-top: 20px; font-size: 16px; display: none; }
@@ -31,8 +26,8 @@
     <canvas id="mainCanvas" width="640" height="480"></canvas>
     
     <div id="uiOverlay">
-      <button id="startButton">Start Ultimate Smile AR</button>
-      <div id="statusText">Please look directly at the camera...</div>
+      <button id="startButton">Start Calibration & AR</button>
+      <div id="statusText">Analyzing single-file 3D geometry...</div>
     </div>
 
     <video id="webcam" autoplay playsinline></video>
@@ -42,7 +37,6 @@
   <script type="module">
     import { FaceLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/vision_bundle.mjs";
 
-    // DOM Elements
     const video = document.getElementById("webcam");
     const mainCanvas = document.getElementById("mainCanvas");
     const mainCtx = mainCanvas.getContext("2d");
@@ -52,62 +46,94 @@
     const statusText = document.getElementById("statusText");
     const uiOverlay = document.getElementById("uiOverlay");
 
-    // --- 1. THREE.JS 3D SETUP ---
+    // --- 1. THREE.JS SETUP ---
     const scene = new THREE.Scene();
-    // Origin is exactly the center of the screen
     const camera = new THREE.OrthographicCamera(-320, 320, 240, -240, -2000, 2000);
     camera.position.z = 1000;
 
     const renderer = new THREE.WebGLRenderer({ canvas: threeCanvas, alpha: true, antialias: true });
     renderer.setSize(640, 480);
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
     scene.add(ambientLight);
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.4);
     directionalLight.position.set(0, 1, 1);
     scene.add(directionalLight);
 
-    let teethGroup = new THREE.Group();
-    let modelOriginalWidth = 1;
+    // Dynamic tracking groups split out from our single file
+    let upperGroup = new THREE.Group();
+    let lowerGroup = new THREE.Group();
+    scene.add(upperGroup);
+    scene.add(lowerGroup);
 
+    let modelOriginalWidth = 1;
+    let isModelLoaded = false;
+
+    const veneerMaterial = new THREE.MeshStandardMaterial({
+      color: 0xf6f6f6, // Natural premium BL1 shade porcelain
+      roughness: 0.25,
+      metalness: 0.05
+    });
+
+    // Load single combined file and slice it programmatically
     const loader = new THREE.GLTFLoader();
     loader.load('teeth.glb', function (gltf) {
-      const teethModel = gltf.scene;
-      
-      // Softer, more realistic material so it doesn't look like a glowing white block
-      teethModel.traverse((child) => {
+      const mainModel = gltf.scene;
+
+      // 1. Determine the overall size and center point of the fused model
+      const overallBox = new THREE.Box3().setFromObject(mainModel);
+      const overallCenter = overallBox.getCenter(new THREE.Vector3());
+      const overallSize = overallBox.getSize(new THREE.Vector3());
+      modelOriginalWidth = overallSize.x;
+
+      // 2. Arrays to temporarily hold categorized pieces
+      const upperMeshes = [];
+      const lowerMeshes = [];
+
+      // 3. Scan every component inside the file and slice by height relative to center
+      mainModel.traverse((child) => {
         if (child.isMesh) {
-          child.material = new THREE.MeshStandardMaterial({
-            color: 0xeeeeee, // Soft natural white (A1/B1)
-            roughness: 0.3,
-            metalness: 0.1,
-          });
+          child.material = veneerMaterial;
+
+          // Find where this specific tooth sits relative to the overall model center
+          const childBox = new THREE.Box3().setFromObject(child);
+          const childCenter = childBox.getCenter(new THREE.Vector3());
+
+          if (childCenter.y > overallCenter.y) {
+            upperMeshes.push(child);
+          } else {
+            lowerMeshes.push(child);
+          }
         }
       });
 
-      const box = new THREE.Box3().setFromObject(teethModel);
-      const center = box.getCenter(new THREE.Vector3());
-      const size = box.getSize(new THREE.Vector3());
-      modelOriginalWidth = size.x;
+      // 4. Reparent upper elements to upperGroup and center them
+      upperMeshes.forEach(mesh => {
+        mesh.position.x -= overallCenter.x;
+        mesh.position.y -= overallCenter.y;
+        mesh.position.z -= overallCenter.z;
+        upperGroup.add(mesh);
+      });
 
-      // Force 3D model geometry to absolute center
-      teethModel.position.x = -center.x;
-      teethModel.position.y = -center.y;
-      teethModel.position.z = -center.z;
+      // 5. Reparent lower elements to lowerGroup and center them
+      lowerMeshes.forEach(mesh => {
+        mesh.position.x -= overallCenter.x;
+        mesh.position.y -= overallCenter.y;
+        mesh.position.z -= overallCenter.z;
+        lowerGroup.add(mesh);
+      });
 
-      teethGroup.add(teethModel);
-      scene.add(teethGroup);
-      teethGroup.visible = false; 
+      upperGroup.visible = false;
+      lowerGroup.visible = false;
+      isModelLoaded = true;
+      document.getElementById("statusText").innerText = "3D Engine Ready. Click Start.";
     });
 
     // --- 2. MEDIAPIPE AI SETUP ---
     let faceLandmarker;
     let lastVideoTime = -1;
-    let isCalibrating = false;
     let isARActive = false;
-    let calibrationFrames = 0;
 
-    // Exact indices for the inner lip line
     const INNER_LIP = [78, 191, 80, 81, 82, 13, 312, 311, 310, 415, 308, 324, 318, 402, 317, 14, 87, 178, 88, 95];
 
     async function initializeAI() {
@@ -119,47 +145,32 @@
       });
     }
 
-    // --- UX FLOW LOGIC ---
+    // --- UX INITIATION AND CALIBRATION ---
     startButton.addEventListener("click", async () => {
-      startButton.style.display = "none";
-      statusText.style.display = "block";
-      statusText.innerText = "Starting Camera...";
+      if (!isModelLoaded) return;
+      uiOverlay.style.display = "none";
       
       const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
       video.srcObject = stream;
       video.addEventListener("loadeddata", () => {
-        statusText.innerText = "Detecting Facial Structure...";
-        isCalibrating = true;
+        isARActive = true;
         renderLoop();
       });
     });
 
-    // --- 3. RENDERING & MASKING LOOP ---
+    // --- 3. DYNAMIC RENDERING LOOP ---
     function renderLoop() {
       if (video.currentTime !== lastVideoTime) {
         lastVideoTime = video.currentTime;
         const results = faceLandmarker.detectForVideo(video, performance.now());
 
-        // Step 1: Calibration Phase
-        if (isCalibrating && results.faceLandmarks && results.faceLandmarks.length > 0) {
-          calibrationFrames++;
-          let percent = Math.min(100, Math.round((calibrationFrames / 30) * 100));
-          statusText.innerText = `Mapping Teeth... ${percent}%`;
-          
-          if (calibrationFrames >= 30) {
-            isCalibrating = false;
-            isARActive = true;
-            uiOverlay.style.display = "none"; // Hide overlay, start AR
-          }
-        }
-
-        // Always draw the real user to the main canvas first
+        // Always background standard web feed
         mainCtx.drawImage(video, 0, 0, 640, 480);
 
-        // Step 2: AR Render Phase
         if (isARActive && results.faceLandmarks && results.faceLandmarks.length > 0) {
           const landmarks = results.faceLandmarks[0];
           
+          // Structural Landmarks
           const leftCorner = landmarks[78];
           const rightCorner = landmarks[308];
           const topLipInner = landmarks[13];
@@ -168,28 +179,39 @@
           const mouthWidthPx = (rightCorner.x - leftCorner.x) * 640;
           const mouthHeightPx = (bottomLipInner.y - topLipInner.y) * 480;
 
-          if (mouthHeightPx > 5) {
-            teethGroup.visible = true;
+          // Only compute and overlay if mouth is visibly separated
+          if (mouthHeightPx > 4) {
+            upperGroup.visible = true;
+            lowerGroup.visible = true;
 
-            // Align coordinates to Three.js world
             const centerX = ((leftCorner.x + rightCorner.x) / 2) * 640;
-            const centerY = ((topLipInner.y + bottomLipInner.y) / 2) * 480;
-            teethGroup.position.set(centerX - 320, 240 - centerY, 0);
+            const topY = topLipInner.y * 480;
+            const bottomY = bottomLipInner.y * 480;
 
-            // Scale to exact mouth width (with a 5% buffer to tuck into corners)
-            const exactScale = (mouthWidthPx * 1.05) / modelOriginalWidth;
-            teethGroup.scale.set(exactScale, exactScale, exactScale);
+            // TRACK INDEPENDENTLY:
+            // Top teeth stick cleanly to the top lip line position
+            upperGroup.position.set(centerX - 320, 240 - topY, 0);
+            // Bottom teeth drop cleanly down with the bottom lip line position
+            lowerGroup.position.set(centerX - 320, 240 - bottomY, 0);
 
-            // Rotate based on head turn
+            // SCALE STRUCTURE: Maintained uniformly by width, no vertical stretching distorting teeth size
+            const dynamicScale = (mouthWidthPx * 1.05) / modelOriginalWidth;
+            upperGroup.scale.set(dynamicScale, dynamicScale, dynamicScale);
+            lowerGroup.scale.set(dynamicScale, dynamicScale, dynamicScale);
+
+            // ROTATION STRUCTURE
             const yaw = Math.atan2(rightCorner.z - leftCorner.z, rightCorner.x - leftCorner.x);
             const roll = Math.atan2(rightCorner.y - leftCorner.y, rightCorner.x - leftCorner.x);
-            teethGroup.rotation.y = yaw;
-            teethGroup.rotation.z = -roll; // Inverse for mirror
+            
+            upperGroup.rotation.y = yaw;
+            upperGroup.rotation.z = -roll;
+            lowerGroup.rotation.y = yaw;
+            lowerGroup.rotation.z = -roll;
 
-            // 1. Render the 3D teeth to the hidden 3D canvas
+            // Render calculations to hidden WebGL layout
             renderer.render(scene, camera);
 
-            // 2. THE MASKING MAGIC: Cut a hole in the 2D canvas exactly where the lips open
+            // THE MASK: Clip out everything except the interior mouth bounds
             mainCtx.save();
             mainCtx.beginPath();
             INNER_LIP.forEach((idx, i) => {
@@ -198,17 +220,17 @@
               else mainCtx.lineTo(pt.x * 640, pt.y * 480);
             });
             mainCtx.closePath();
-            mainCtx.clip(); // Everything drawn after this point ONLY appears inside the mouth
+            mainCtx.clip(); 
 
-            // 3. Draw the 3D teeth onto the main canvas. Because of the clip above, they won't spill onto the lips.
+            // Project split structure into natural open area
             mainCtx.drawImage(threeCanvas, 0, 0, 640, 480);
             mainCtx.restore();
           } else {
-            teethGroup.visible = false;
+            upperGroup.visible = false;
+            lowerGroup.visible = false;
           }
         }
       }
-      
       window.requestAnimationFrame(renderLoop);
     }
 
