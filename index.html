@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Ultimate Smile Design - Tunable AR</title>
+  <title>Ultimate Smile Design - Premium WebAR</title>
   <style>
     body { margin: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; background-color: #111; font-family: sans-serif; overflow: hidden; }
     
@@ -11,19 +11,22 @@
     #mainCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: scaleX(-1); }
     
     /* Splash Screen */
-    #uiOverlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10; color: white; }
+    #uiOverlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10; color: white; text-align: center; }
     #startButton { padding: 15px 30px; font-size: 18px; font-weight: bold; background: #fff; color: #000; border: none; border-radius: 30px; cursor: pointer; transition: 0.3s; }
     #startButton:hover { background: #ddd; transform: scale(1.05); }
+    .hint { font-size: 14px; color: #aaa; margin-top: 15px; max-width: 80%; }
     
     /* Live Tuning Panel */
-    .controls { width: 640px; background: #222; padding: 15px; box-sizing: border-radius: 12px; margin-top: 15px; color: white; border-radius: 12px; display: none; }
+    .controls { width: 640px; background: #222; padding: 15px; box-sizing: border-box; margin-top: 15px; color: white; border-radius: 12px; display: none; }
     .control-group { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
     label { font-size: 14px; width: 120px; }
     input[type=range] { flex-grow: 1; margin: 0 15px; }
-    span.val { width: 40px; text-align: right; font-size: 14px; font-weight: bold; color: #4CAF50; }
+    span.val { width: 45px; text-align: right; font-size: 14px; font-weight: bold; color: #4CAF50; }
   </style>
 
+  <!-- Google MediaPipe -->
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/vision_bundle.mjs" type="module"></script>
+  <!-- Three.js & GLTF Loader -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 </head>
@@ -33,28 +36,30 @@
     <canvas id="mainCanvas" width="640" height="480"></canvas>
     
     <div id="uiOverlay">
-      <button id="startButton">Start AR Engine</button>
-      <div id="statusText" style="margin-top:15px; display:none;">Loading 3D Asset...</div>
+      <button id="startButton">Start Premium AR</button>
+      <div id="statusText" style="margin-top:15px; display:none;">Initializing 3D Engine...</div>
+      <div class="hint" id="hintText">Please wait while we slice your 3D model into tracking segments.</div>
     </div>
 
     <video id="webcam" autoplay playsinline crossorigin="anonymous"></video>
     <canvas id="threeCanvas" width="640" height="480"></canvas>
   </div>
 
+  <!-- The Tuning Panel -->
   <div class="controls" id="controlsPanel">
     <div class="control-group">
       <label>Teeth Size</label>
-      <input type="range" id="scaleSlider" min="0.8" max="2.0" step="0.05" value="1.2">
-      <span class="val" id="scaleVal">1.2x</span>
+      <input type="range" id="scaleSlider" min="0.5" max="2.5" step="0.05" value="1.0">
+      <span class="val" id="scaleVal">1.0x</span>
     </div>
     <div class="control-group">
       <label>Vertical Offset</label>
-      <input type="range" id="ySlider" min="-30" max="30" step="1" value="0">
+      <input type="range" id="ySlider" min="-50" max="50" step="1" value="0">
       <span class="val" id="yVal">0px</span>
     </div>
     <div class="control-group">
-      <label>Shade (Whiteness)</label>
-      <input type="range" id="shadeSlider" min="150" max="255" step="1" value="255">
+      <label>Porcelain Shade</label>
+      <input type="range" id="shadeSlider" min="200" max="255" step="1" value="255">
       <span class="val" id="shadeVal">BL1</span>
     </div>
   </div>
@@ -62,6 +67,7 @@
   <script type="module">
     import { FaceLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/vision_bundle.mjs";
 
+    // --- DOM ELEMENTS ---
     const video = document.getElementById("webcam");
     const mainCanvas = document.getElementById("mainCanvas");
     const mainCtx = mainCanvas.getContext("2d");
@@ -70,15 +76,17 @@
     const startButton = document.getElementById("startButton");
     const uiOverlay = document.getElementById("uiOverlay");
     const controlsPanel = document.getElementById("controlsPanel");
+    const statusText = document.getElementById("statusText");
+    const hintText = document.getElementById("hintText");
 
-    // UI Listeners
-    let customScale = 1.2;
+    // --- UI TUNING VARIABLES ---
+    let customScale = 1.0;
     let customYOffset = 0;
     
-    document.getElementById('scaleSlider').addEventListener('input', (e) => { customScale = parseFloat(e.target.value); document.getElementById('scaleVal').innerText = customScale + 'x'; });
+    document.getElementById('scaleSlider').addEventListener('input', (e) => { customScale = parseFloat(e.target.value); document.getElementById('scaleVal').innerText = customScale.toFixed(2) + 'x'; });
     document.getElementById('ySlider').addEventListener('input', (e) => { customYOffset = parseInt(e.target.value); document.getElementById('yVal').innerText = customYOffset + 'px'; });
 
-    // --- THREE.JS SETUP ---
+    // --- 1. THREE.JS 3D SETUP ---
     const scene = new THREE.Scene();
     const camera = new THREE.OrthographicCamera(-320, 320, 240, -240, -2000, 2000);
     camera.position.z = 1000;
@@ -86,10 +94,11 @@
     const renderer = new THREE.WebGLRenderer({ canvas: threeCanvas, alpha: true, antialias: true });
     renderer.setSize(640, 480);
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
+    // Studio Lighting for the new glossy material
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
     scene.add(ambientLight);
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
-    directionalLight.position.set(0, 1, 1);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    directionalLight.position.set(0, 100, 500); // Placed in front of the face
     scene.add(directionalLight);
 
     let upperGroup = new THREE.Group();
@@ -100,24 +109,30 @@
     let modelOriginalWidth = 1;
     let isModelLoaded = false;
 
-    // Hardcoded to brilliant e.max white (no more dark shadows)
-    const veneerMaterial = new THREE.MeshStandardMaterial({
-      color: 0xffffff, 
-      roughness: 0.15, // Glossy like wet enamel
-      metalness: 0.1
+    // --- THE NEW PBR MATERIAL (KILLS THE STICKER LOOK) ---
+    const veneerMaterial = new THREE.MeshPhysicalMaterial({
+      color: 0xfdfdfd,          // Base ivory/white
+      roughness: 0.15,          // Smooth wet surface
+      metalness: 0.0,
+      clearcoat: 1.0,           // Glossy saliva layer
+      clearcoatRoughness: 0.1,
+      transmission: 0.3,        // Slight translucency at the edges
+      ior: 1.5,
+      thickness: 1.5
     });
 
-    // Shade Slider Logic
+    // Shade Control Logic
     document.getElementById('shadeSlider').addEventListener('input', (e) => { 
       const val = parseInt(e.target.value); 
       veneerMaterial.color.setRGB(val/255, val/255, val/255);
-      let shadeName = "A3";
-      if (val > 240) shadeName = "BL1";
-      else if (val > 220) shadeName = "A1";
-      else if (val > 190) shadeName = "A2";
+      let shadeName = "A2";
+      if (val > 245) shadeName = "BL1";
+      else if (val > 230) shadeName = "B1";
+      else if (val > 215) shadeName = "A1";
       document.getElementById('shadeVal').innerText = shadeName; 
     });
 
+    // --- AUTO-SPLIT MODEL LOADER ---
     const loader = new THREE.GLTFLoader();
     loader.load('teeth.glb', function (gltf) {
       const mainModel = gltf.scene;
@@ -135,24 +150,28 @@
           child.material = veneerMaterial;
           const childBox = new THREE.Box3().setFromObject(child);
           const childCenter = childBox.getCenter(new THREE.Vector3());
+          // Slice based on center Y coordinate
           if (childCenter.y > overallCenter.y) upperMeshes.push(child);
           else lowerMeshes.push(child);
         }
       });
 
+      // Align relative to center
       upperMeshes.forEach(mesh => { mesh.position.sub(overallCenter); upperGroup.add(mesh); });
       lowerMeshes.forEach(mesh => { mesh.position.sub(overallCenter); lowerGroup.add(mesh); });
 
       upperGroup.visible = false;
       lowerGroup.visible = false;
       isModelLoaded = true;
+      hintText.innerText = "Model loaded successfully. Click start when ready.";
     });
 
-    // --- MEDIAPIPE AI SETUP ---
+    // --- 2. MEDIAPIPE AI SETUP ---
     let faceLandmarker;
     let lastVideoTime = -1;
     let isARActive = false;
 
+    // Exact inner lip contour for Stencil Masking
     const INNER_LIP = [78, 191, 80, 81, 82, 13, 312, 311, 310, 415, 308, 324, 318, 402, 317, 14, 87, 178, 88, 95];
 
     async function initializeAI() {
@@ -164,28 +183,39 @@
       });
     }
 
+    // --- START SEQUENCE ---
     startButton.addEventListener("click", async () => {
       if (!isModelLoaded) {
-         document.getElementById("statusText").style.display = "block";
+         startButton.style.display = "none";
+         statusText.style.display = "block";
          return;
       }
-      uiOverlay.style.display = "none";
-      controlsPanel.style.display = "block"; // Show controls once started
+      startButton.style.display = "none";
+      hintText.style.display = "none";
+      statusText.style.display = "block";
+      statusText.innerText = "Connecting Camera...";
       
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
-      video.srcObject = stream;
-      video.addEventListener("loadeddata", () => {
-        isARActive = true;
-        renderLoop();
-      });
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
+        video.srcObject = stream;
+        video.addEventListener("loadeddata", () => {
+          uiOverlay.style.display = "none";
+          controlsPanel.style.display = "block"; // Show the sliders
+          isARActive = true;
+          renderLoop();
+        });
+      } catch (err) {
+        statusText.innerText = "Camera access denied or unavailable.";
+      }
     });
 
-    // --- DYNAMIC RENDERING LOOP ---
+    // --- 3. DYNAMIC AR RENDER LOOP ---
     function renderLoop() {
       if (video.currentTime !== lastVideoTime) {
         lastVideoTime = video.currentTime;
         const results = faceLandmarker.detectForVideo(video, performance.now());
 
+        // Always draw the raw webcam feed first
         mainCtx.drawImage(video, 0, 0, 640, 480);
 
         if (isARActive && results.faceLandmarks && results.faceLandmarks.length > 0) {
@@ -199,6 +229,7 @@
           const mouthWidthPx = (rightCorner.x - leftCorner.x) * 640;
           const mouthHeightPx = (bottomLipInner.y - topLipInner.y) * 480;
 
+          // Only compute AR math if the mouth is slightly open
           if (mouthHeightPx > 5) {
             upperGroup.visible = true;
             lowerGroup.visible = true;
@@ -207,25 +238,27 @@
             const topY = topLipInner.y * 480;
             const bottomY = bottomLipInner.y * 480;
 
-            // Apply the custom slider scale
+            // 1. SCALE: Calculate absolute width, then multiply by the Tuning Slider
             const exactScale = (mouthWidthPx / modelOriginalWidth) * customScale;
             upperGroup.scale.set(exactScale, exactScale, exactScale);
             lowerGroup.scale.set(exactScale, exactScale, exactScale);
 
-            // Apply the custom vertical offset
+            // 2. POSITION: Anchor to the lips, plus apply the Vertical Offset Tuning Slider
             upperGroup.position.set(centerX - 320, (240 - topY) + customYOffset, 0);
             lowerGroup.position.set(centerX - 320, (240 - bottomY) + customYOffset, 0);
 
+            // 3. ROTATION: Track the Z-depth to mimic head turning
             const yaw = Math.atan2(rightCorner.z - leftCorner.z, rightCorner.x - leftCorner.x);
             const roll = Math.atan2(rightCorner.y - leftCorner.y, rightCorner.x - leftCorner.x);
-            
             upperGroup.rotation.y = yaw;
             upperGroup.rotation.z = -roll;
             lowerGroup.rotation.y = yaw;
             lowerGroup.rotation.z = -roll;
 
+            // Render the 3D scene invisibly
             renderer.render(scene, camera);
 
+            // 4. THE MASK: Clip out the lips so the 3D asset stays inside the mouth
             mainCtx.save();
             mainCtx.beginPath();
             INNER_LIP.forEach((idx, i) => {
@@ -236,9 +269,11 @@
             mainCtx.closePath();
             mainCtx.clip(); 
 
+            // Paste the 3D teeth inside the lip mask
             mainCtx.drawImage(threeCanvas, 0, 0, 640, 480);
             mainCtx.restore();
           } else {
+            // Hide teeth when mouth is closed
             upperGroup.visible = false;
             lowerGroup.visible = false;
           }
