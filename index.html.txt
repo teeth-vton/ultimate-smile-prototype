@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Ultimate Smile Design - Live AR</title>
+  <style>
+    body {
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-color: #111;
+      overflow: hidden;
+    }
+    .container {
+      position: relative;
+      width: 640px;
+      height: 480px;
+    }
+    /* Video is hidden, we draw its frames to the canvas instead */
+    video {
+      display: none; 
+    }
+    /* Canvas acts as our augmented mirror */
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      transform: scaleX(-1); /* Mirrors the camera like a selfie */
+      border-radius: 12px;
+    }
+    .loading {
+      position: absolute;
+      color: white;
+      font-family: sans-serif;
+      z-index: 10;
+    }
+  </style>
+  <!-- Load Google MediaPipe Tasks Vision -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/vision_bundle.mjs" type="module"></script>
+</head>
+<body>
+
+  <div class="container">
+    <div class="loading" id="loadingText">Loading AI Engine...</div>
+    <video id="webcam" autoplay playsinline></video>
+    <canvas id="outputCanvas" width="640" height="480"></canvas>
+  </div>
+
+  <!-- JavaScript will go here in Step 3 -->
+<script type="module">
+    import { FaceLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/vision_bundle.mjs";
+
+    const video = document.getElementById("webcam");
+    const canvas = document.getElementById("outputCanvas");
+    const ctx = canvas.getContext("2d");
+    const loadingText = document.getElementById("loadingText");
+
+    // Load your teeth PNG asset
+    const teethImage = new Image();
+    teethImage.src = "teeth.png"; 
+
+    let faceLandmarker;
+    let lastVideoTime = -1;
+
+    // The exact tracking coordinates for the INNER edge of the lips
+    const INNER_LIP_LOOP = [
+      78, 191, 80, 81, 82, 13, 312, 311, 310, 415, 308, // Upper inner lip
+      324, 318, 402, 317, 14, 87, 178, 88, 95           // Lower inner lip
+    ];
+
+    // 1. Initialize the MediaPipe AI Model
+    async function initializeAI() {
+      const vision = await FilesetResolver.forVisionTasks(
+        "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm"
+      );
+      faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
+        baseOptions: {
+          modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
+          delegate: "GPU" // Forces client-side GPU usage ($0 cost)
+        },
+        runningMode: "VIDEO",
+        numFaces: 1
+      });
+      startCamera();
+    }
+
+    // 2. Start the user's Webcam
+    async function startCamera() {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
+      video.srcObject = stream;
+      video.addEventListener("loadeddata", predictWebcam);
+      loadingText.style.display = "none";
+    }
+
+    // 3. Frame-by-Frame AR Render Loop
+    async function predictWebcam() {
+      // Draw the camera feed onto the canvas
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      // Only run detection if the video frame has updated
+      if (video.currentTime !== lastVideoTime) {
+        lastVideoTime = video.currentTime;
+        const results = faceLandmarker.detectForVideo(video, performance.now());
+
+        if (results.faceLandmarks && results.faceLandmarks.length > 0) {
+          const landmarks = results.faceLandmarks[0];
+          drawTeethOverlay(landmarks);
+        }
+      }
+      
+      // Loop forever at 30-60 FPS
+      window.requestAnimationFrame(predictWebcam);
+    }
+
+    // 4. The Core AR Logic: Masking the mouth and inserting teeth
+    function drawTeethOverlay(landmarks) {
+      // Calculate where the mouth is on the canvas
+      const leftCorner = landmarks[78];
+      const rightCorner = landmarks[308];
+      const topLip = landmarks[13];
+      const bottomLip = landmarks[14];
+
+      const mouthWidth = (rightCorner.x - leftCorner.x) * canvas.width;
+      const mouthHeight = (bottomLip.y - topLip.y) * canvas.height;
+      const centerX = leftCorner.x * canvas.width;
+      const centerY = topLip.y * canvas.height;
+
+      // Only show teeth if mouth is slightly open
+      if (mouthHeight > 5) {
+        ctx.save(); // Save default canvas state
+
+        // CREATE CLIPPING MASK: Trace the inner lips
+        ctx.beginPath();
+        INNER_LIP_LOOP.forEach((index, i) => {
+          const point = landmarks[index];
+          const x = point.x * canvas.width;
+          const y = point.y * canvas.height;
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        });
+        ctx.closePath();
+        ctx.clip(); // <--- MAGIC: Anything drawn after this only appears INSIDE the lips
+
+        // DRAW TEETH ASSET: Stretch the PNG to fit the mouth width
+        // If the teeth.png fails to load, it falls back to a white box
+        if (teethImage.complete && teethImage.naturalHeight !== 0) {
+           // We draw the image slightly wider and taller than the actual opening
+           // so it fills the gaps realistically
+           ctx.drawImage(
+             teethImage, 
+             centerX - (mouthWidth * 0.1), // Offset slightly left
+             centerY - (mouthHeight * 0.2), // Offset slightly up
+             mouthWidth * 1.2, 
+             mouthHeight * 1.5
+           );
+        } else {
+           // Fallback: draw a solid white shape representing teeth
+           ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
+           ctx.fill();
+        }
+
+        ctx.restore(); // Remove clipping mask so next frame resets
+      }
+    }
+
+    // Start the process
+    initializeAI();
+  </script>
+
+</body>
+</html>
