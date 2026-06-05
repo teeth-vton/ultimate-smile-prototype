@@ -2,241 +2,97 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Ultimate Smile Design - Direct Render Fix</title>
+  <title>Ultimate Smile Design - Surgical Injection</title>
   <style>
-    body { margin: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; background-color: #050505; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; overflow: hidden; }
-    
-    .ar-window { position: relative; width: 640px; height: 480px; border-radius: 16px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.5); background: #111; z-index: 1; }
-    video, #threeCanvas { display: none; } 
+    body { margin: 0; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
+    .ar-window { position: relative; width: 640px; height: 480px; border-radius: 12px; overflow: hidden; }
     #mainCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: scaleX(-1); }
-    
-    #uiOverlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10; color: white; text-align: center; }
-    #startButton { padding: 16px 40px; font-size: 16px; font-weight: bold; background: #ffffff; color: #000; border: none; border-radius: 50px; cursor: pointer; transition: all 0.3s ease; }
-    #startButton:hover { transform: scale(1.05); }
-    #statusText { font-size: 14px; color: #ddd; margin-top: 15px; }
-
-    .controls { width: 640px; background: #1a1a1a; padding: 15px; box-sizing: border-box; margin-top: 15px; color: white; border-radius: 12px; display: none; z-index: 2; }
-    .control-group { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-    label { font-size: 12px; width: 140px; font-weight: bold; color: #ccc; }
-    input[type=range] { flex-grow: 1; margin: 0 15px; }
-    span.val { width: 60px; text-align: right; font-size: 12px; font-weight: bold; color: #4CAF50; }
+    #uiOverlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; color: #fff; display: flex; justify-content: center; align-items: center; z-index: 20; }
   </style>
-
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/vision_bundle.mjs" type="module"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 </head>
 <body>
-
   <div class="ar-window">
     <canvas id="mainCanvas" width="640" height="480"></canvas>
-    
-    <div id="uiOverlay">
-      <h2>Ultimate Smile</h2>
-      <p style="font-size: 12px; color: #aaa; margin-bottom: 20px;">Direct Injection Render Patch</p>
-      <button id="startButton" disabled>Loading GLB Asset...</button>
-      <div id="statusText">Bypassing pipeline blockers...</div>
-    </div>
-
-    <video id="webcam" autoplay playsinline crossorigin="anonymous"></video>
-    <canvas id="threeCanvas" width="640" height="480"></canvas>
-  </div>
-
-  <div class="controls" id="controlsPanel">
-    <div style="font-size: 11px; text-transform: uppercase; color: #777; margin-bottom: 10px; border-bottom: 1px solid #333;">Emergency Visual Tuning</div>
-    <div class="control-group">
-      <label>Manual Asset Scale</label>
-      <input type="range" id="scaleSlider" min="1" max="500" step="1" value="100">
-      <span class="val" id="scaleVal">100x</span>
-    </div>
-    <div class="control-group">
-      <label>Vertical Shift (Y)</label>
-      <input type="range" id="ySlider" min="-200" max="200" step="2" value="0">
-      <span class="val" id="yVal">0px</span>
-    </div>
-    <div class="control-group">
-      <label>Depth Shift (Z)</label>
-      <input type="range" id="zSlider" min="-200" max="200" step="2" value="0">
-      <span class="val" id="zVal">0px</span>
-    </div>
+    <div id="uiOverlay"><button id="startButton">Initialize Surgical AR</button></div>
   </div>
 
   <script type="module">
     import { FaceLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/vision_bundle.mjs";
 
-    const video = document.getElementById("webcam");
+    const video = document.createElement("video");
     const mainCanvas = document.getElementById("mainCanvas");
     const mainCtx = mainCanvas.getContext("2d");
-    const threeCanvas = document.getElementById("threeCanvas");
-    const uiOverlay = document.getElementById("uiOverlay");
-    const startButton = document.getElementById("startButton");
-    const statusText = document.getElementById("statusText");
-    const controlsPanel = document.getElementById("controlsPanel");
-
-    let devScale = 100;
-    let devY = 0;
-    let devZ = 0;
-
-    document.getElementById('scaleSlider').addEventListener('input', (e) => { devScale = parseFloat(e.target.value); document.getElementById('scaleVal').innerText = devScale + 'x'; });
-    document.getElementById('ySlider').addEventListener('input', (e) => { devY = parseInt(e.target.value); document.getElementById('yVal').innerText = devY + 'px'; });
-    document.getElementById('zSlider').addEventListener('input', (e) => { devZ = parseInt(e.target.value); document.getElementById('zVal').innerText = devZ + 'px'; });
-
+    
+    // --- THREE.JS SETUP ---
     const scene = new THREE.Scene();
-    const camera = new THREE.OrthographicCamera(-320, 320, 240, -240, -2000, 2000);
-    camera.position.z = 500;
-
-    const renderer = new THREE.WebGLRenderer({ canvas: threeCanvas, alpha: true, antialias: true });
+    const camera = new THREE.OrthographicCamera(-320, 320, 240, -240, 1, 2000);
+    camera.position.z = 1000;
+    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
     renderer.setSize(640, 480);
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 2.0);
-    scene.add(ambientLight);
-
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
-    directionalLight.position.set(0, 0, 300);
-    scene.add(directionalLight);
-
-    let teethMasterGroup = new THREE.Group();
-    scene.add(teethMasterGroup);
-
-    const visibleWhiteMaterial = new THREE.MeshStandardMaterial({
-      color: 0xffffff,
-      roughness: 0.2,
-      metalness: 0.1,
-      side: THREE.DoubleSide
-    });
-
-    // MISSING VARIABLE DECLARED HERE:
-    let isModelReady = false;
-
+    let teethModel;
     const loader = new THREE.GLTFLoader();
-    const cleanUrl = 'teeth.glb?nocache=' + Date.now();
-
-    loader.load(cleanUrl, function (gltf) {
-      const model = gltf.scene;
-
-      model.traverse((child) => {
-        if (child.isMesh) {
-          child.material = visibleWhiteMaterial;
-          child.castShadow = false;
-          child.receiveShadow = false;
-        }
-      });
-
-      const box = new THREE.Box3().setFromObject(model);
-      const center = box.getCenter(new THREE.Vector3());
-      model.position.sub(center); 
-
-      teethMasterGroup.add(model);
-      teethMasterGroup.visible = false;
-
-      isModelReady = true;
-      startButton.disabled = false;
-      startButton.innerText = "Start Live AR Engine";
-      statusText.innerText = "Asset loaded cleanly. Ready to inject.";
-    }, undefined, function (error) {
-        statusText.innerText = "File read error. Ensure teeth.glb is in the folder.";
+    
+    // LOAD & CENTER GEOMETRY
+    loader.load('teeth.glb', (gltf) => {
+        teethModel = gltf.scene;
+        
+        // 1. CALCULATE TRUE TEETH CENTER (Ignoring gum bloat)
+        const box = new THREE.Box3().setFromObject(teethModel);
+        const center = new THREE.Vector3();
+        box.getCenter(center);
+        
+        // 2. MOVE MODEL SO TEETH ARE AT 0,0,0
+        teethModel.position.sub(center);
+        
+        // 3. APPLY MATERIAL
+        teethModel.traverse(c => { if(c.isMesh) c.material = new THREE.MeshStandardMaterial({color: 0xffffff}); });
+        
+        scene.add(teethModel);
     });
 
-    let faceLandmarker;
-    let lastVideoTime = -1;
-    let isARActive = false;
+    // --- AI TRACKING ---
+    const landmarker = await FaceLandmarker.createFromOptions(
+        await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm"),
+        { baseOptions: { modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task" }, runningMode: "VIDEO" }
+    );
 
-    const INNER_LIP_CONTOUR = [78, 191, 80, 81, 82, 13, 312, 311, 310, 415, 308, 324, 318, 402, 317, 14, 87, 178, 88, 95];
-
-    let smoothX = 0, smoothY = 0, smoothWidth = 0;
-    let smoothYaw = 0, smoothRoll = 0;
-    const SMOOTH_FACTOR = 0.35;
-
-    async function initializeAI() {
-      const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm");
-      faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
-        baseOptions: { modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task", delegate: "GPU" },
-        runningMode: "VIDEO",
-        numFaces: 1
-      });
-    }
-
-    startButton.addEventListener("click", async () => {
-      if (!isModelReady) return;
-      uiOverlay.style.display = "none";
-      controlsPanel.style.display = "block";
-      
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
+    document.getElementById("startButton").onclick = async () => {
+        document.getElementById("uiOverlay").style.display = "none";
+        const stream = await navigator.mediaDevices.getUserMedia({video: true});
         video.srcObject = stream;
-        video.addEventListener("loadeddata", () => {
-          isARActive = true;
-          renderLoop();
-        });
-      } catch (err) {
-        alert("Camera access required for tracking.");
-      }
-    });
+        video.play();
+        requestAnimationFrame(render);
+    };
 
-    function renderLoop() {
-      if (video.currentTime !== lastVideoTime) {
-        lastVideoTime = video.currentTime;
-        const results = faceLandmarker.detectForVideo(video, performance.now());
-
-        mainCtx.drawImage(video, 0, 0, 640, 480);
-
-        if (isARActive && results.faceLandmarks && results.faceLandmarks.length > 0) {
-          const landmarks = results.faceLandmarks[0];
-          
-          const leftLip = landmarks[78];
-          const rightLip = landmarks[308];
-          const upperLipCenter = landmarks[13];
-          const lowerLipCenter = landmarks[14];
-
-          const currentMouthWidth = (rightLip.x - leftLip.x) * 640;
-          const currentMouthHeight = (lowerLipCenter.y - upperLipCenter.y) * 480;
-          const currentMouthCenterX = ((leftLip.x + rightLip.x) / 2) * 640;
-          const currentMouthCenterY = ((upperLipCenter.y + lowerLipCenter.y) / 2) * 480;
-
-          const currentYaw = Math.atan2(rightLip.z - leftLip.z, rightLip.x - leftLip.x);
-          const currentRoll = Math.atan2(rightLip.y - leftLip.y, rightLip.x - leftLip.x);
-
-          smoothX = (currentMouthCenterX * SMOOTH_FACTOR) + (smoothX * (1 - SMOOTH_FACTOR));
-          smoothY = (currentMouthCenterY * SMOOTH_FACTOR) + (smoothY * (1 - SMOOTH_FACTOR));
-          smoothWidth = (currentMouthWidth * SMOOTH_FACTOR) + (smoothWidth * (1 - SMOOTH_FACTOR));
-          smoothYaw = (currentYaw * SMOOTH_FACTOR) + (smoothYaw * (1 - SMOOTH_FACTOR));
-          smoothRoll = (currentRoll * SMOOTH_FACTOR) + (smoothRoll * (1 - SMOOTH_FACTOR));
-
-          if (currentMouthHeight > 6) {
-            teethMasterGroup.visible = true;
-
-            const finalThreeX = smoothX - 320;
-            const finalThreeY = 240 - smoothY + devY; 
-
-            teethMasterGroup.position.set(finalThreeX, finalThreeY, devZ);
-            teethMasterGroup.rotation.set(0, smoothYaw, -smoothRoll);
-
-            const finalScaleCalculation = (smoothWidth / 100) * devScale;
-            teethMasterGroup.scale.set(finalScaleCalculation, finalScaleCalculation, finalScaleCalculation);
-
-            renderer.render(scene, camera);
-
-            mainCtx.save();
-            mainCtx.beginPath();
-            INNER_LIP_CONTOUR.forEach((index, count) => {
-              const coordinate = landmarks[index];
-              if (count === 0) mainCtx.moveTo(coordinate.x * 640, coordinate.y * 480);
-              else mainCtx.lineTo(coordinate.x * 640, coordinate.y * 480);
-            });
-            mainCtx.closePath();
-            mainCtx.clip();
-
-            mainCtx.drawImage(threeCanvas, 0, 0, 640, 480);
-            mainCtx.restore();
-          } else {
-            teethMasterGroup.visible = false;
-          }
+    function render() {
+        if(video.readyState === video.HAVE_ENOUGH_DATA) {
+            mainCtx.drawImage(video, 0, 0, 640, 480);
+            const results = landmarker.detectForVideo(video, performance.now());
+            
+            if (results.faceLandmarks.length > 0 && teethModel) {
+                const lm = results.faceLandmarks[0];
+                const lipL = lm[78], lipR = lm[308];
+                const mouthWidth = (lipR.x - lipL.x) * 640;
+                
+                // DYNAMIC SCALING
+                const scale = mouthWidth / 150; // 150 is your asset baseline width
+                teethModel.scale.set(scale, scale, scale);
+                
+                // POSITIONING
+                const centerX = ((lipL.x + lipR.x)/2) * 640 - 320;
+                const centerY = (lm[13].y + lm[14].y)/2 * 480 - 240;
+                teethModel.position.set(-centerX, -centerY, 0);
+                
+                renderer.render(scene, camera);
+                mainCtx.drawImage(renderer.domElement, 0, 0);
+            }
         }
-      }
-      window.requestAnimationFrame(renderLoop);
+        requestAnimationFrame(render);
     }
-
-    initializeAI();
   </script>
 </body>
 </html>
