@@ -2,19 +2,25 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Ultimate Smile Design - True Color Match AR</title>
+  <title>Ultimate Smile Design - Tunable AR</title>
   <style>
-    body { margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #000; font-family: sans-serif; overflow: hidden; }
-    .container { position: relative; width: 640px; height: 480px; }
+    body { margin: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; background-color: #111; font-family: sans-serif; overflow: hidden; }
     
+    .ar-window { position: relative; width: 640px; height: 480px; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
     video, #threeCanvas { display: none; } 
-    #mainCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: scaleX(-1); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    #mainCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: scaleX(-1); }
     
-    #uiOverlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; flex-direction: column; justify-content: center; align-items: center; border-radius: 12px; z-index: 10; color: white; text-align: center; padding: 20px;}
-    #startButton { padding: 15px 30px; font-size: 18px; font-weight: bold; background: #fff; color: #000; border: none; border-radius: 30px; cursor: pointer; transition: 0.3s; margin-bottom: 10px;}
+    /* Splash Screen */
+    #uiOverlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10; color: white; }
+    #startButton { padding: 15px 30px; font-size: 18px; font-weight: bold; background: #fff; color: #000; border: none; border-radius: 30px; cursor: pointer; transition: 0.3s; }
     #startButton:hover { background: #ddd; transform: scale(1.05); }
-    #statusText { font-size: 16px; display: none; }
-    .hint { font-size: 14px; color: #aaa; margin-top: 10px; }
+    
+    /* Live Tuning Panel */
+    .controls { width: 640px; background: #222; padding: 15px; box-sizing: border-radius: 12px; margin-top: 15px; color: white; border-radius: 12px; display: none; }
+    .control-group { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    label { font-size: 14px; width: 120px; }
+    input[type=range] { flex-grow: 1; margin: 0 15px; }
+    span.val { width: 40px; text-align: right; font-size: 14px; font-weight: bold; color: #4CAF50; }
   </style>
 
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/vision_bundle.mjs" type="module"></script>
@@ -23,17 +29,34 @@
 </head>
 <body>
 
-  <div class="container">
+  <div class="ar-window">
     <canvas id="mainCanvas" width="640" height="480"></canvas>
     
     <div id="uiOverlay">
-      <button id="startButton">Start Auto-Match AR</button>
-      <div id="statusText">Analyzing 3D geometry...</div>
-      <div class="hint">Tip: Smile wide at the camera for the best color match.</div>
+      <button id="startButton">Start AR Engine</button>
+      <div id="statusText" style="margin-top:15px; display:none;">Loading 3D Asset...</div>
     </div>
 
     <video id="webcam" autoplay playsinline crossorigin="anonymous"></video>
     <canvas id="threeCanvas" width="640" height="480"></canvas>
+  </div>
+
+  <div class="controls" id="controlsPanel">
+    <div class="control-group">
+      <label>Teeth Size</label>
+      <input type="range" id="scaleSlider" min="0.8" max="2.0" step="0.05" value="1.2">
+      <span class="val" id="scaleVal">1.2x</span>
+    </div>
+    <div class="control-group">
+      <label>Vertical Offset</label>
+      <input type="range" id="ySlider" min="-30" max="30" step="1" value="0">
+      <span class="val" id="yVal">0px</span>
+    </div>
+    <div class="control-group">
+      <label>Shade (Whiteness)</label>
+      <input type="range" id="shadeSlider" min="150" max="255" step="1" value="255">
+      <span class="val" id="shadeVal">BL1</span>
+    </div>
   </div>
 
   <script type="module">
@@ -41,14 +64,21 @@
 
     const video = document.getElementById("webcam");
     const mainCanvas = document.getElementById("mainCanvas");
-    const mainCtx = mainCanvas.getContext("2d", { willReadFrequently: true }); // Optimized for pixel reading
+    const mainCtx = mainCanvas.getContext("2d");
     const threeCanvas = document.getElementById("threeCanvas");
     
     const startButton = document.getElementById("startButton");
-    const statusText = document.getElementById("statusText");
     const uiOverlay = document.getElementById("uiOverlay");
+    const controlsPanel = document.getElementById("controlsPanel");
 
-    // --- 1. THREE.JS SETUP ---
+    // UI Listeners
+    let customScale = 1.2;
+    let customYOffset = 0;
+    
+    document.getElementById('scaleSlider').addEventListener('input', (e) => { customScale = parseFloat(e.target.value); document.getElementById('scaleVal').innerText = customScale + 'x'; });
+    document.getElementById('ySlider').addEventListener('input', (e) => { customYOffset = parseInt(e.target.value); document.getElementById('yVal').innerText = customYOffset + 'px'; });
+
+    // --- THREE.JS SETUP ---
     const scene = new THREE.Scene();
     const camera = new THREE.OrthographicCamera(-320, 320, 240, -240, -2000, 2000);
     camera.position.z = 1000;
@@ -56,9 +86,9 @@
     const renderer = new THREE.WebGLRenderer({ canvas: threeCanvas, alpha: true, antialias: true });
     renderer.setSize(640, 480);
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
     scene.add(ambientLight);
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.4);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
     directionalLight.position.set(0, 1, 1);
     scene.add(directionalLight);
 
@@ -70,11 +100,22 @@
     let modelOriginalWidth = 1;
     let isModelLoaded = false;
 
-    // Start with a base white, but we will dynamically shift this
+    // Hardcoded to brilliant e.max white (no more dark shadows)
     const veneerMaterial = new THREE.MeshStandardMaterial({
       color: 0xffffff, 
-      roughness: 0.3,
-      metalness: 0.05
+      roughness: 0.15, // Glossy like wet enamel
+      metalness: 0.1
+    });
+
+    // Shade Slider Logic
+    document.getElementById('shadeSlider').addEventListener('input', (e) => { 
+      const val = parseInt(e.target.value); 
+      veneerMaterial.color.setRGB(val/255, val/255, val/255);
+      let shadeName = "A3";
+      if (val > 240) shadeName = "BL1";
+      else if (val > 220) shadeName = "A1";
+      else if (val > 190) shadeName = "A2";
+      document.getElementById('shadeVal').innerText = shadeName; 
     });
 
     const loader = new THREE.GLTFLoader();
@@ -99,23 +140,15 @@
         }
       });
 
-      upperMeshes.forEach(mesh => {
-        mesh.position.sub(overallCenter);
-        upperGroup.add(mesh);
-      });
-
-      lowerMeshes.forEach(mesh => {
-        mesh.position.sub(overallCenter);
-        lowerGroup.add(mesh);
-      });
+      upperMeshes.forEach(mesh => { mesh.position.sub(overallCenter); upperGroup.add(mesh); });
+      lowerMeshes.forEach(mesh => { mesh.position.sub(overallCenter); lowerGroup.add(mesh); });
 
       upperGroup.visible = false;
       lowerGroup.visible = false;
       isModelLoaded = true;
-      document.getElementById("statusText").innerText = "Ready. Click Start & Smile!";
     });
 
-    // --- 2. MEDIAPIPE AI SETUP ---
+    // --- MEDIAPIPE AI SETUP ---
     let faceLandmarker;
     let lastVideoTime = -1;
     let isARActive = false;
@@ -132,8 +165,12 @@
     }
 
     startButton.addEventListener("click", async () => {
-      if (!isModelLoaded) return;
+      if (!isModelLoaded) {
+         document.getElementById("statusText").style.display = "block";
+         return;
+      }
       uiOverlay.style.display = "none";
+      controlsPanel.style.display = "block"; // Show controls once started
       
       const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
       video.srcObject = stream;
@@ -143,32 +180,12 @@
       });
     });
 
-    // --- COLOR SAMPLING FUNCTION ---
-    function getAverageWebcamColor(context, x, y, width, height) {
-      // Ensure we don't sample outside the canvas edges
-      if (x < 0 || y < 0 || x + width > 640 || y + height > 480) return null;
-      
-      const imageData = context.getImageData(x, y, width, height);
-      const data = imageData.data;
-      let r = 0, g = 0, b = 0;
-      
-      for (let i = 0; i < data.length; i += 4) {
-        r += data[i];
-        g += data[i+1];
-        b += data[i+2];
-      }
-      
-      const count = data.length / 4;
-      return new THREE.Color(`rgb(${Math.floor(r/count)}, ${Math.floor(g/count)}, ${Math.floor(b/count)})`);
-    }
-
-    // --- 3. DYNAMIC RENDERING LOOP ---
+    // --- DYNAMIC RENDERING LOOP ---
     function renderLoop() {
       if (video.currentTime !== lastVideoTime) {
         lastVideoTime = video.currentTime;
         const results = faceLandmarker.detectForVideo(video, performance.now());
 
-        // Draw webcam feed
         mainCtx.drawImage(video, 0, 0, 640, 480);
 
         if (isARActive && results.faceLandmarks && results.faceLandmarks.length > 0) {
@@ -187,31 +204,17 @@
             lowerGroup.visible = true;
 
             const centerX = ((leftCorner.x + rightCorner.x) / 2) * 640;
-            const centerY = ((topLipInner.y + bottomLipInner.y) / 2) * 480;
             const topY = topLipInner.y * 480;
             const bottomY = bottomLipInner.y * 480;
 
-            // --- FEATURE 1: DYNAMIC COLOR MATCHING ---
-            // If the user smiles wide enough, sample the pixels right in the middle of their mouth
-            if (mouthHeightPx > 15) {
-              // Sample a small 10x10 pixel box from the webcam feed
-              const sampledColor = getAverageWebcamColor(mainCtx, centerX - 5, centerY - 5, 10, 10);
-              if (sampledColor) {
-                // Smoothly transition the 3D material color to match the room lighting and natural teeth
-                // '0.05' ensures it shifts gradually and doesn't flicker wildly
-                veneerMaterial.color.lerp(sampledColor, 0.05);
-              }
-            }
-
-            // --- FEATURE 2: EXACT SIZE FIX ---
-            // Removed the artificial 1.05 multiplier. It now scales exactly 1:1 with your lip corners.
-            const exactScale = mouthWidthPx / modelOriginalWidth;
+            // Apply the custom slider scale
+            const exactScale = (mouthWidthPx / modelOriginalWidth) * customScale;
             upperGroup.scale.set(exactScale, exactScale, exactScale);
             lowerGroup.scale.set(exactScale, exactScale, exactScale);
 
-            // Anchor strictly to the upper and lower lip inner lines
-            upperGroup.position.set(centerX - 320, 240 - topY, 0);
-            lowerGroup.position.set(centerX - 320, 240 - bottomY, 0);
+            // Apply the custom vertical offset
+            upperGroup.position.set(centerX - 320, (240 - topY) + customYOffset, 0);
+            lowerGroup.position.set(centerX - 320, (240 - bottomY) + customYOffset, 0);
 
             const yaw = Math.atan2(rightCorner.z - leftCorner.z, rightCorner.x - leftCorner.x);
             const roll = Math.atan2(rightCorner.y - leftCorner.y, rightCorner.x - leftCorner.x);
@@ -223,7 +226,6 @@
 
             renderer.render(scene, camera);
 
-            // Stencil mask clipping
             mainCtx.save();
             mainCtx.beginPath();
             INNER_LIP.forEach((idx, i) => {
