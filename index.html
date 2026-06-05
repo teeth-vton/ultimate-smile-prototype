@@ -2,31 +2,30 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Ultimate Smile Design - Production WebAR</title>
+  <title>Ultimate Smile Design - Master Calibration</title>
   <style>
-    body { margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #050505; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; overflow: hidden; }
+    body { margin: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; background-color: #050505; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; overflow: hidden; }
     
-    .ar-window { position: relative; width: 640px; height: 480px; border-radius: 16px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.5); background: #111; }
+    .ar-window { position: relative; width: 640px; height: 480px; border-radius: 16px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.5); background: #111; z-index: 1; }
     video, #threeCanvas { display: none; } 
-    #mainCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: scaleX(-1); } /* Mirror effect */
+    #mainCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: scaleX(-1); }
     
-    /* Premium Splash Screen UX */
-    #uiOverlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10; color: white; text-align: center; backdrop-filter: blur(5px); transition: opacity 0.5s ease; }
-    .brand-title { font-size: 24px; font-weight: 800; margin-bottom: 5px; letter-spacing: 1px; }
-    .brand-subtitle { font-size: 14px; color: #aaa; margin-bottom: 30px; }
-    #startButton { padding: 16px 40px; font-size: 16px; font-weight: bold; background: #ffffff; color: #000; border: none; border-radius: 50px; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(255,255,255,0.2); }
-    #startButton:hover { transform: scale(1.05); background: #f0f0f0; }
-    #startButton:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-    
-    /* Loading Indicator */
-    .loader { border: 3px solid rgba(255,255,255,0.1); border-top: 3px solid #fff; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; display: none; margin-bottom: 15px; }
-    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    /* Splash Screen */
+    #uiOverlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10; color: white; text-align: center; }
+    #startButton { padding: 16px 40px; font-size: 16px; font-weight: bold; background: #ffffff; color: #000; border: none; border-radius: 50px; cursor: pointer; transition: all 0.3s ease; }
+    #startButton:hover { transform: scale(1.05); }
     #statusText { font-size: 14px; color: #ddd; margin-top: 15px; }
+
+    /* Developer Calibration Panel */
+    .controls { width: 640px; background: #1a1a1a; padding: 15px; box-sizing: border-box; margin-top: 15px; color: white; border-radius: 12px; display: none; z-index: 2; }
+    .control-group { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    label { font-size: 12px; width: 140px; font-weight: bold; color: #ccc; }
+    input[type=range] { flex-grow: 1; margin: 0 15px; }
+    span.val { width: 50px; text-align: right; font-size: 12px; font-weight: bold; color: #4CAF50; }
+    .section-title { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #777; margin-bottom: 8px; border-bottom: 1px solid #333; padding-bottom: 4px; }
   </style>
 
-  <!-- Google MediaPipe AI Core -->
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/vision_bundle.mjs" type="module"></script>
-  <!-- Three.js Graphics Core -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 </head>
@@ -36,21 +35,38 @@
     <canvas id="mainCanvas" width="640" height="480"></canvas>
     
     <div id="uiOverlay">
-      <div class="brand-title">ULTIMATE SMILE</div>
-      <div class="brand-subtitle">Virtual Try-On Experience</div>
-      <div class="loader" id="spinner"></div>
-      <button id="startButton" disabled>Loading 3D Assets...</button>
-      <div id="statusText">Initializing AI Engine</div>
+      <h2 style="margin-bottom: 5px;">Ultimate Smile Dev</h2>
+      <p style="font-size: 12px; color: #aaa; margin-bottom: 20px;">Model Calibration Mode</p>
+      <button id="startButton">Loading Fresh Asset...</button>
+      <div id="statusText">Bypassing Browser Cache...</div>
     </div>
 
     <video id="webcam" autoplay playsinline crossorigin="anonymous"></video>
     <canvas id="threeCanvas" width="640" height="480"></canvas>
   </div>
 
+  <div class="controls" id="controlsPanel">
+    <div class="section-title">Model Structural Fixes</div>
+    <div class="control-group">
+      <label>Base Scale Adjust</label>
+      <input type="range" id="scaleSlider" min="0.1" max="4.0" step="0.1" value="1.0">
+      <span class="val" id="scaleVal">1.0x</span>
+    </div>
+    <div class="control-group">
+      <label>Pitch (Up/Down Facing)</label>
+      <input type="range" id="pitchSlider" min="-180" max="180" step="5" value="0">
+      <span class="val" id="pitchVal">0°</span>
+    </div>
+    <div class="control-group">
+      <label>Vertical Position</label>
+      <input type="range" id="ySlider" min="-100" max="100" step="1" value="0">
+      <span class="val" id="yVal">0px</span>
+    </div>
+  </div>
+
   <script type="module">
     import { FaceLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/vision_bundle.mjs";
 
-    // --- DOM REFERENCES ---
     const video = document.getElementById("webcam");
     const mainCanvas = document.getElementById("mainCanvas");
     const mainCtx = mainCanvas.getContext("2d");
@@ -58,9 +74,18 @@
     const uiOverlay = document.getElementById("uiOverlay");
     const startButton = document.getElementById("startButton");
     const statusText = document.getElementById("statusText");
-    const spinner = document.getElementById("spinner");
+    const controlsPanel = document.getElementById("controlsPanel");
 
-    // --- 1. THREE.JS ENGINE SETUP ---
+    // UI Calibration Variables
+    let calibScale = 1.0;
+    let calibPitch = 0; // In degrees
+    let calibYOffset = 0;
+
+    document.getElementById('scaleSlider').addEventListener('input', (e) => { calibScale = parseFloat(e.target.value); document.getElementById('scaleVal').innerText = calibScale.toFixed(1) + 'x'; });
+    document.getElementById('pitchSlider').addEventListener('input', (e) => { calibPitch = parseInt(e.target.value); document.getElementById('pitchVal').innerText = calibPitch + '°'; });
+    document.getElementById('ySlider').addEventListener('input', (e) => { calibYOffset = parseInt(e.target.value); document.getElementById('yVal').innerText = calibYOffset + 'px'; });
+
+    // --- THREE.JS SETUP ---
     const scene = new THREE.Scene();
     const camera = new THREE.OrthographicCamera(-320, 320, 240, -240, -2000, 2000);
     camera.position.z = 1000;
@@ -68,159 +93,139 @@
     const renderer = new THREE.WebGLRenderer({ canvas: threeCanvas, alpha: true, antialias: true });
     renderer.setSize(640, 480);
 
-    // Premium Studio Lighting
     const ambientLight = new THREE.AmbientLight(0xffffff, 1.5);
     scene.add(ambientLight);
     const directionalLight = new THREE.DirectionalLight(0xffffff, 1.0);
-    directionalLight.position.set(0, 100, 300); // Front-top lighting to mimic a ring light
+    directionalLight.position.set(0, 50, 200);
     scene.add(directionalLight);
 
-    // Dynamic Tracking Groups
     let upperGroup = new THREE.Group();
     let lowerGroup = new THREE.Group();
-    scene.add(upperGroup);
-    scene.add(lowerGroup);
+    
+    // We wrap them in a master container to easily apply the pitch/rotation fixes
+    let masterJawContainer = new THREE.Group();
+    masterJawContainer.add(upperGroup);
+    masterJawContainer.add(lowerGroup);
+    scene.add(masterJawContainer);
 
     let modelOriginalWidth = 1;
     let isModelReady = false;
 
-    // The Lenskart-Standard PBR Material (High Gloss, Edge Translucency)
     const premiumEnamelMaterial = new THREE.MeshPhysicalMaterial({
-      color: 0xffffff,          // BL1 Bleach White
-      roughness: 0.12,          // Very smooth
-      metalness: 0.0,
-      clearcoat: 1.0,           // Saliva reflection layer
-      clearcoatRoughness: 0.05, // Sharp specular highlights
-      transmission: 0.25,       // Subsurface scattering (light passing through tips)
-      ior: 1.5,                 // Index of refraction for human enamel
-      thickness: 1.0            // Physical volume for transmission mapping
+      color: 0xffffff, roughness: 0.1, metalness: 0.0,
+      clearcoat: 1.0, clearcoatRoughness: 0.05
     });
 
-    // Asset Slicing & Loading Pipeline
     const loader = new THREE.GLTFLoader();
-loader.load('teeth.glb?v=1', function (gltf) {
-      const mainModel = gltf.scene;
-
-      // Calculate absolute anatomical bounds of the downloaded model
-      const overallBox = new THREE.Box3().setFromObject(mainModel);
+    
+    // CACHE BUSTER: The "?nocache=" forces Vercel and the browser to download the freshest file
+    const fileUrl = 'teeth.glb?nocache=' + Date.now();
+    
+    loader.load(fileUrl, function (gltf) {
+      // 1. Calculate the bounding box of whatever messy file the artist created
+      const overallBox = new THREE.Box3().setFromObject(gltf.scene);
       const overallCenter = overallBox.getCenter(new THREE.Vector3());
-      const overallSize = overallBox.getSize(new THREE.Vector3());
-      modelOriginalWidth = overallSize.x;
+      modelOriginalWidth = overallBox.getSize(new THREE.Vector3()).x;
 
-      const upperMeshes = [];
-      const lowerMeshes = [];
+      // Force world matrices to update before extraction
+      gltf.scene.updateMatrixWorld(true);
 
-      // Auto-Splitting Logic: Scans the file and assigns teeth to top/bottom based on geometry height
-      mainModel.traverse((child) => {
+      // 2. THE MATRIX BAKER: Extract geometry, delete bad artist code, center perfectly
+      gltf.scene.traverse((child) => {
         if (child.isMesh) {
-          child.material = premiumEnamelMaterial; // Apply premium material
           const childBox = new THREE.Box3().setFromObject(child);
           const childCenter = childBox.getCenter(new THREE.Vector3());
-          if (childCenter.y > overallCenter.y) upperMeshes.push(child);
-          else lowerMeshes.push(child);
+
+          // Clone the raw shape and bake the world position into the vertices
+          const cleanGeometry = child.geometry.clone();
+          cleanGeometry.applyMatrix4(child.matrixWorld);
+
+          // Translate the geometry so it pivots exactly around 0,0,0
+          cleanGeometry.translate(-overallCenter.x, -overallCenter.y, -overallCenter.z);
+
+          const cleanMesh = new THREE.Mesh(cleanGeometry, premiumEnamelMaterial);
+
+          if (childCenter.y > overallCenter.y) {
+            upperGroup.add(cleanMesh);
+          } else {
+            lowerGroup.add(cleanMesh);
+          }
         }
       });
-
-      // Center geometry precisely at 0,0,0 for perfect mathematical scaling later
-      upperMeshes.forEach(mesh => { mesh.position.sub(overallCenter); upperGroup.add(mesh); });
-      lowerMeshes.forEach(mesh => { mesh.position.sub(overallCenter); lowerGroup.add(mesh); });
 
       upperGroup.visible = false;
       lowerGroup.visible = false;
       
-      // UX Update
       isModelReady = true;
-      spinner.style.display = "none";
-      startButton.disabled = false;
-      startButton.innerText = "Start Virtual Try-On";
-      statusText.innerText = "Camera access required on next step";
+      startButton.innerText = "Start Camera";
+      statusText.innerText = "Newest 3D Asset Loaded Successfully";
     });
 
-    // --- 2. MEDIAPIPE AI TRACKING CORE ---
+    // --- MEDIAPIPE AI SETUP ---
     let faceLandmarker;
     let lastVideoTime = -1;
     let isARActive = false;
 
-    // INNER LIP OCCLUSION STENCIL (The exact loop that creates the mouth hole)
     const INNER_LIP_CONTOUR = [78, 191, 80, 81, 82, 13, 312, 311, 310, 415, 308, 324, 318, 402, 317, 14, 87, 178, 88, 95];
 
-    // Anti-Flicker Mathematical Memory Buffers
     let smoothWidth = 0, smoothCenterX = 0;
     let smoothTopY = 0, smoothBottomY = 0;
-    let smoothYaw = 0, smoothRoll = 0, smoothPitch = 0;
-    let smoothLateralShift = 0;
-    const EMA_ALPHA = 0.3; // 30% instant snap, 70% memory smoothing. Perfect balance of speed and stability.
+    let smoothYaw = 0, smoothRoll = 0, smoothLateralShift = 0;
+    const EMA_ALPHA = 0.3; 
 
     async function initializeAI() {
       const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm");
       faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
-        baseOptions: { 
-          modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task", 
-          delegate: "GPU" // Forces user device to handle processing (Zero server cost)
-        },
+        baseOptions: { modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task", delegate: "GPU" },
         runningMode: "VIDEO",
         numFaces: 1
       });
     }
 
-    // UX Button Event
     startButton.addEventListener("click", async () => {
       if (!isModelReady) return;
       startButton.style.display = "none";
-      spinner.style.display = "block";
       statusText.innerText = "Connecting secure camera feed...";
       
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480, facingMode: "user" } });
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
         video.srcObject = stream;
         video.addEventListener("loadeddata", () => {
-          uiOverlay.style.opacity = "0"; // Smooth fade out
-          setTimeout(() => uiOverlay.style.display = "none", 500);
+          uiOverlay.style.display = "none";
+          controlsPanel.style.display = "block"; // Open calibration panel
           isARActive = true;
           renderLoop();
         });
       } catch (err) {
-        spinner.style.display = "none";
-        statusText.innerText = "Camera access denied. Please allow camera permissions.";
+        statusText.innerText = "Camera access denied.";
       }
     });
 
-    // --- 3. THE PHYSICS & RENDER LOOP ---
+    // --- RENDER LOOP ---
     function renderLoop() {
       if (video.currentTime !== lastVideoTime) {
         lastVideoTime = video.currentTime;
         const results = faceLandmarker.detectForVideo(video, performance.now());
 
-        // Background Layer: Paint the real user
         mainCtx.drawImage(video, 0, 0, 640, 480);
 
         if (isARActive && results.faceLandmarks && results.faceLandmarks.length > 0) {
           const lm = results.faceLandmarks[0];
           
-          // Core Anatomical Landmarks
-          const leftCorner = lm[78];
-          const rightCorner = lm[308];
-          const topLip = lm[13];
-          const bottomLip = lm[14];
-          const noseTip = lm[4];
-          const chinTip = lm[152];
+          const leftCorner = lm[78], rightCorner = lm[308];
+          const topLip = lm[13], bottomLip = lm[14];
+          const noseTip = lm[4], chinTip = lm[152];
 
-          // 1. Calculate Raw Frame Data (in Pixels)
           const rawMouthWidth = (rightCorner.x - leftCorner.x) * 640;
           const rawMouthHeight = (bottomLip.y - topLip.y) * 480;
           const rawCenterX = ((leftCorner.x + rightCorner.x) / 2) * 640;
           const rawTopY = topLip.y * 480;
           const rawBottomY = bottomLip.y * 480;
           
-          // Rotational Tracking (Head Turns)
           const rawYaw = Math.atan2(rightCorner.z - leftCorner.z, rightCorner.x - leftCorner.x);
           const rawRoll = Math.atan2(rightCorner.y - leftCorner.y, rightCorner.x - leftCorner.x);
-          
-          // Lateral Jaw Tracking (Chewing/Side-to-side shift)
-          // Difference between where the chin is vs where the center of the nose is
           const rawLateralShift = (chinTip.x - noseTip.x) * 640; 
 
-          // 2. Apply Exponential Smoothing (Kills the jitter/flicker)
           smoothWidth = (rawMouthWidth * EMA_ALPHA) + (smoothWidth * (1 - EMA_ALPHA));
           smoothCenterX = (rawCenterX * EMA_ALPHA) + (smoothCenterX * (1 - EMA_ALPHA));
           smoothTopY = (rawTopY * EMA_ALPHA) + (smoothTopY * (1 - EMA_ALPHA));
@@ -229,42 +234,38 @@ loader.load('teeth.glb?v=1', function (gltf) {
           smoothRoll = (rawRoll * EMA_ALPHA) + (smoothRoll * (1 - EMA_ALPHA));
           smoothLateralShift = (rawLateralShift * EMA_ALPHA) + (smoothLateralShift * (1 - EMA_ALPHA));
 
-          // 3. Activation Threshold: Only render teeth if mouth is physically parted
           if (rawMouthHeight > 8) {
             upperGroup.visible = true;
             lowerGroup.visible = true;
 
-            // --- AUTO-SIZING ALGORITHM ---
-            // Width of mouth * 1.05 padding / Original Model width
-            const exactScale = (smoothWidth * 1.05) / modelOriginalWidth;
-            upperGroup.scale.set(exactScale, exactScale, exactScale);
-            lowerGroup.scale.set(exactScale, exactScale, exactScale);
+            // Apply anatomical sizing + the developer custom multiplier
+            const exactScale = ((smoothWidth * 1.05) / modelOriginalWidth) * calibScale;
+            masterJawContainer.scale.set(exactScale, exactScale, exactScale);
 
-            // --- JAW PHYSICS & ALIGNMENT ---
-            // Three.js world space origin is center (0,0). Canvas is top-left (0,0). Convert math:
+            // Apply Developer Pitch (to fix upside down or floor-facing models)
+            masterJawContainer.rotation.x = calibPitch * (Math.PI / 180);
+
             const threeX = smoothCenterX - 320;
             const threeUpperY = 240 - smoothTopY;
             const threeLowerY = 240 - smoothBottomY;
 
-            // Anchor Upper Jaw to Top Lip (Static to skull)
-            upperGroup.position.set(threeX, threeUpperY, 0);
+            // Anchor upper jaw, apply developer Y Offset
+            upperGroup.position.set(threeX, threeUpperY + calibYOffset, 0);
             
-            // Anchor Lower Jaw to Bottom Lip + Lateral Chin Shift
-            lowerGroup.position.set(threeX + smoothLateralShift, threeLowerY, 0);
+            // Anchor lower jaw to chin drop
+            lowerGroup.position.set(threeX + smoothLateralShift, threeLowerY + calibYOffset, 0);
 
-            // Apply global head rotation
+            // Head tracking rotations
             upperGroup.rotation.set(0, smoothYaw, -smoothRoll);
             
-            // TMJ Hinge Simulation: Tilt the bottom teeth backwards as the mouth opens
-            // The further the bottom lip drops from the top lip, the more it rotates on the X axis
+            // TMJ Jaw dropping physics
             const mouthOpenness = smoothBottomY - smoothTopY;
-            const jawTiltX = Math.max(0, mouthOpenness * 0.015); // Biomechanical tilt factor
+            const jawTiltX = Math.max(0, mouthOpenness * 0.015);
             lowerGroup.rotation.set(-jawTiltX, smoothYaw, -smoothRoll);
 
-            // Render 3D Scene
             renderer.render(scene, camera);
 
-            // --- OCCLUSION MASKING (The Digital Hole-Punch) ---
+            // Stencil Mask
             mainCtx.save();
             mainCtx.beginPath();
             INNER_LIP_CONTOUR.forEach((idx, i) => {
@@ -275,11 +276,9 @@ loader.load('teeth.glb?v=1', function (gltf) {
             mainCtx.closePath();
             mainCtx.clip(); 
 
-            // Paste perfectly masked 3D asset onto the user's face
             mainCtx.drawImage(threeCanvas, 0, 0, 640, 480);
             mainCtx.restore();
           } else {
-            // Hide completely if lips are closed to save rendering power
             upperGroup.visible = false;
             lowerGroup.visible = false;
           }
