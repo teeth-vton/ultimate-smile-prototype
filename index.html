@@ -42,11 +42,21 @@
 
     // 3. Load Model
     const loader = new GLTFLoader();
-    loader.load('./teeth.glb', (gltf) => {
-      gltf.scene.scale.set(0.1, 0.1, 0.1); 
-      anchor.group.add(gltf.scene);
-    });
-
+   loader.load('./teeth.glb', (gltf) => {
+  const teeth = gltf.scene;
+  
+  // Try these values to bring it down to your mouth
+  // Scale: Make it visible first
+  teeth.scale.set(0.5, 0.5, 0.5); 
+  
+  // Position: 
+  // X (0) = Keep centered
+  // Y (-0.5) = Move down from forehead to mouth (Adjust this to lower it)
+  // Z (0.2) = Move forward/backward relative to face
+  teeth.position.set(0, -0.5, 0.2); 
+  
+  anchor.group.add(teeth);
+});
     // 4. Start Engine
     document.getElementById("startBtn").onclick = async () => {
       await mindarThree.start(); // This triggers the browser camera prompt
