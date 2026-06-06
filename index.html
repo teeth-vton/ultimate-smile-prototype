@@ -2,26 +2,34 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Banuba AR Teeth Whitening</title>
+  <title>Banuba AR VTO</title>
   <style>
-    body { margin: 0; background: #111; display: flex; justify-content: center; align-items: center; height: 100vh; color: white; font-family: sans-serif; flex-direction: column; }
-    #webar-player { width: 100%; max-width: 640px; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.8); background: #000; display: flex; justify-content: center; align-items: center; aspect-ratio: 4/3;}
-    #status { margin-bottom: 20px; font-weight: bold; color: #4ade80; }
+    body { background: #111; display: flex; flex-direction: column; align-items: center; height: 100vh; margin: 0; font-family: sans-serif; color: white; justify-content: center; }
+    #webar-player { width: 100%; max-width: 640px; border-radius: 12px; background: #000; box-shadow: 0 10px 30px rgba(0,0,0,0.8); aspect-ratio: 4/3; }
+    #status { margin-bottom: 20px; font-weight: bold; color: #4ade80; text-align: center; padding: 0 20px;}
+    
+    /* The Start Button that unlocks the browser camera block */
+    button { padding: 15px 30px; font-size: 18px; font-weight: bold; cursor: pointer; background: #4ade80; color: #111; border: none; border-radius: 8px; margin-bottom: 20px;}
+    button:hover { background: #22c55e; }
   </style>
 </head>
 <body>
 
-  <div id="status">Loading Banuba AI Engine...</div>
+  <button id="start-btn">📸 Start Virtual Try-On</button>
+  <div id="status">Waiting to start...</div>
   <div id="webar-player"></div>
 
   <script type="module">
-    // Pull the Banuba Engine directly from their high-speed CDN so GitHub stays clean
     import { Webcam, Player, Module, Effect, Dom } from 'https://cdn.jsdelivr.net/npm/@banuba/webar/dist/BanubaSDK.browser.esm.min.js';
 
-    async function initAR() {
+    // We wait for the user to click the button before asking for the camera
+    document.getElementById('start-btn').addEventListener('click', async () => {
+      
+      // Hide the button and update text
+      document.getElementById('start-btn').style.display = 'none';
+      document.getElementById('status').innerText = "Loading AI Engine... (Please click 'Allow' on the camera prompt)";
+
       try {
-        // 1. Initialize the Engine with your token
         const player = await Player.create({
           clientToken: 'Qk5CIAnZ5QCVvwyhPDHnIWjc3+QSQYDbFloei6q+6wZPVQacNxvodLMeMN1Z6u+eMjsVO2RnoQEQvvqcTpFxGyGvZ2gM8fOpciy133xGGkHjm83uMYgANT5XlDOEkQ2jO1NtbO31RLxAPv1HZawc+E/V6l/rRy/21N11YNrAR9jxFqQdJFF3AnsxPdkehXSppDgTV5QZVxz8ovO3d3xD0bNwv7zw31tqAMShrEPEFGM4wIED7rs98sL7+rXv6HNkiQOR0zaiLMHCYMY7y5QoApY8bZqSwJPfMoI/4nRPh92V9j2w8t+5L4sASql9IeicNUN1GgSRo4GoveD4HzdSytBsV+PiV4Mh+7AZV54rU4kVh0slIXBOK72e7YR+l3hPNJiSwDMJDc/9i3KnUwl+aDhxGP5JRlov6TzTiJ7FmyPxMveiZO94UvJtq3xktx3s1sGTRPXF1lGXaWAEBN5oAb2Nh3nN7UbV1ooC3y8+Qnns/agZnJ0DdU25LPNvZ/cvllQuuSu9IUv9gDy5N5QzUTmQ+JcUxM1BNWQmlDSwQtSwpXjQvJdme1OcuNV7N4PU6yCLlh+/kQmSOVeKxiQPdYrUqsKht2NNnrnNv09zwfky6fqeHJSVsbD5lJ5jtdpBVc+dJZazQk7f7IiUg4rCSQ==',
           locateFile: {
@@ -31,32 +39,26 @@
           }
         });
 
-        // 2. Load the AI Face Tracking neural network
         document.getElementById('status').innerText = "Loading Face Tracking...";
         await player.addModule(new Module('https://cdn.jsdelivr.net/npm/@banuba/webar/dist/modules/face_tracker.zip'));
 
-        // 3. Mount the Webcam into the webpage
         document.getElementById('status').innerText = "Starting Camera...";
         await player.use(new Webcam());
         Dom.render(player, '#webar-player');
 
-        // 4. HERE IS THE LINE! It matches your file perfectly now:
         document.getElementById('status').innerText = "Applying Teeth AR...";
         const effect = new Effect('./TeethWitening_Toggle.zip'); 
         await player.applyEffect(effect);
 
-        // Success!
         document.getElementById('status').innerText = "🦷 Live AR Active!";
 
       } catch (error) {
         console.error("AR Error:", error);
-        document.getElementById('status').innerText = "Error loading AR. Make sure your .zip file is uploaded exactly as named!";
-        document.getElementById('status').style.color = "red";
+        document.getElementById('status').style.color = "#ff4444";
+        // This line will print the EXACT reason it failed to your screen
+        document.getElementById('status').innerText = "ERROR: " + error.message; 
       }
-    }
-
-    initAR();
+    });
   </script>
-
 </body>
 </html>
