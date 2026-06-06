@@ -11,48 +11,41 @@
         "mindar-face-three": "https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-face-three.prod.js"
       }
     }
-  </script>
-  <style>
-    body { margin: 0; }
-    #container { width: 100vw; height: 100vh; overflow: hidden; position: relative; }
-    #startBtn { position: absolute; z-index: 10; top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 20px 40px; font-size: 20px; cursor: pointer; }
-  </style>
-</head>
-<body>
-  <button id="startBtn">START 3D VTO</button>
-  <div id="container"></div>
+<script type="module">
+  import * as THREE from 'three';
+  import { MindARThree } from 'mindar-face-three';
+  import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-  <script type="module">
-    import * as THREE from 'three';
-    import { MindARThree } from 'mindar-face-three';
-    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+  const mindarThree = new MindARThree({
+    container: document.querySelector("#container"),
+  });
+  const {renderer, scene, camera} = mindarThree;
 
-    const mindarThree = new MindARThree({
-      container: document.querySelector("#container"),
+  // 1. ADD LIGHTS (This fixes the black silhouette)
+  const ambientLight = new THREE.AmbientLight(0xffffff, 1);
+  scene.add(ambientLight);
+  const directionalLight = new THREE.DirectionalLight(0xffffff, 2);
+  directionalLight.position.set(0, 1, 1);
+  scene.add(directionalLight);
+
+  const anchor = mindarThree.addAnchor(10); 
+
+  const loader = new GLTFLoader();
+  loader.load('./teeth.glb', (gltf) => {
+    const teeth = gltf.scene;
+    // ADJUST THESE NUMBERS TO FIX POSITION
+    teeth.scale.set(0.5, 0.5, 0.5); 
+    teeth.position.set(0, -0.1, 0.1); // Move: [x, y, z] (y is up/down, z is front/back)
+    anchor.group.add(teeth);
+  });
+
+  const start = async() => {
+    await mindarThree.start();
+    renderer.setAnimationLoop(() => {
+      renderer.render(scene, camera);
     });
-    const {renderer, scene, camera} = mindarThree;
-
-    // 1. Create the Mouth Anchor
-    // Anchor 10 is the mouth region
-    const anchor = mindarThree.addAnchor(10); 
-
-    // 2. Load the GLB model
-    const loader = new GLTFLoader();
-    loader.load('./teeth.glb', (gltf) => {
-      const teeth = gltf.scene;
-      teeth.scale.set(1, 1, 1); // Adjust if it's too big/small
-      teeth.position.set(0, 0, 0); // Center relative to mouth
-      anchor.group.add(teeth);
-    });
-
-    // 3. Start Button Logic
-    document.getElementById("startBtn").onclick = async () => {
-      await mindarThree.start();
-      document.getElementById("startBtn").style.display = 'none';
-      renderer.setAnimationLoop(() => {
-        renderer.render(scene, camera);
-      });
-    };
-  </script>
+  }
+  start();
+</script>
 </body>
 </html>
