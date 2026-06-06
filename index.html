@@ -2,16 +2,25 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Ultimate Smile Design - Auto-Normalizer</title>
+  <title>Ultimate Smile - X-Ray Mode</title>
   <style>
     body { margin: 0; background: #050505; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; overflow: hidden; font-family: sans-serif; }
-    .ar-window { position: relative; width: 640px; height: 480px; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
+    .ar-window { position: relative; width: 640px; height: 480px; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.8); border: 2px solid #00d2ff; }
     #mainCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: scaleX(-1); }
     video, #threeCanvas { display: none; }
-    #uiOverlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); color: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 20; text-align: center; padding: 20px;}
-    button { padding: 15px 30px; font-size: 16px; font-weight: bold; background: #fff; color: #000; border: none; border-radius: 30px; cursor: pointer; margin-top: 20px;}
+    
+    #uiOverlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); color: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 20; text-align: center; }
+    button { padding: 15px 30px; font-size: 16px; font-weight: bold; background: #00d2ff; color: #000; border: none; border-radius: 30px; cursor: pointer; margin-top: 20px;}
     button:disabled { background: #555; color: #888; cursor: not-allowed; }
+
+    /* Rescue Panel */
+    .controls { width: 640px; background: #1a1a1a; padding: 15px; box-sizing: border-box; margin-top: 15px; color: white; border-radius: 12px; display: none; }
+    .control-group { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    label { font-size: 12px; width: 140px; font-weight: bold; color: #00d2ff; }
+    input[type=range] { flex-grow: 1; margin: 0 15px; }
+    span.val { width: 50px; text-align: right; font-size: 12px; font-weight: bold; }
   </style>
+
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/vision_bundle.mjs" type="module"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
@@ -21,12 +30,31 @@
   <div class="ar-window">
     <canvas id="mainCanvas" width="640" height="480"></canvas>
     <div id="uiOverlay">
-      <h2>Ultimate Smile AR</h2>
-      <p id="statusText">Running Auto-Normalizer on 3D Asset...</p>
-      <button id="startButton" disabled>Loading...</button>
+      <h2>X-Ray Diagnostic Mode</h2>
+      <p id="statusText">Loading Asset...</p>
+      <button id="startButton" disabled>Start Camera</button>
     </div>
     <video id="webcam" autoplay playsinline crossorigin="anonymous"></video>
     <canvas id="threeCanvas" width="640" height="480"></canvas>
+  </div>
+
+  <div class="controls" id="controlsPanel">
+    <div style="font-size: 11px; text-transform: uppercase; color: #aaa; margin-bottom: 10px; border-bottom: 1px solid #333;">Find Missing Teeth</div>
+    <div class="control-group">
+      <label>Force Scale</label>
+      <input type="range" id="scaleSlider" min="0.1" max="300" step="1" value="100">
+      <span class="val" id="scaleVal">100x</span>
+    </div>
+    <div class="control-group">
+      <label>Move Up/Down (Y)</label>
+      <input type="range" id="ySlider" min="-300" max="300" step="5" value="0">
+      <span class="val" id="yVal">0px</span>
+    </div>
+    <div class="control-group">
+      <label>Move Left/Right (X)</label>
+      <input type="range" id="xSlider" min="-300" max="300" step="5" value="0">
+      <span class="val" id="xVal">0px</span>
+    </div>
   </div>
 
   <script type="module">
@@ -38,85 +66,60 @@
     const threeCanvas = document.getElementById("threeCanvas");
     const startButton = document.getElementById("startButton");
     const statusText = document.getElementById("statusText");
+    const controlsPanel = document.getElementById("controlsPanel");
 
-    // --- THREE.JS GRAPHICS SETUP ---
+    // Rescue Variables
+    let debugScale = 100;
+    let debugY = 0;
+    let debugX = 0;
+
+    document.getElementById('scaleSlider').addEventListener('input', (e) => { debugScale = parseFloat(e.target.value); document.getElementById('scaleVal').innerText = debugScale + 'x'; });
+    document.getElementById('ySlider').addEventListener('input', (e) => { debugY = parseInt(e.target.value); document.getElementById('yVal').innerText = debugY + 'px'; });
+    document.getElementById('xSlider').addEventListener('input', (e) => { debugX = parseInt(e.target.value); document.getElementById('xVal').innerText = debugX + 'px'; });
+
+    // --- THREE.JS ---
     const scene = new THREE.Scene();
     const camera = new THREE.OrthographicCamera(-320, 320, 240, -240, -2000, 2000);
     camera.position.z = 1000;
-
     const renderer = new THREE.WebGLRenderer({ canvas: threeCanvas, alpha: true, antialias: true });
     renderer.setSize(640, 480);
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 1.5);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 2.0);
     scene.add(ambientLight);
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 1.0);
-    directionalLight.position.set(0, 100, 300);
-    scene.add(directionalLight);
 
     let teethMasterGroup = new THREE.Group();
     scene.add(teethMasterGroup);
     let isModelReady = false;
 
-    // The Perfect Brilliant White Porcelain Material
-    const brilliantWhiteMaterial = new THREE.MeshPhysicalMaterial({
-      color: 0xffffff,          // Pure White
-      roughness: 0.15,          // Smooth wet reflection
-      metalness: 0.0,
-      clearcoat: 1.0,           // High gloss
-      clearcoatRoughness: 0.05
-    });
+    // BRIGHT NEON BLUE MATERIAL TO FORCE VISIBILITY
+    const diagnosticMaterial = new THREE.MeshBasicMaterial({ color: 0x00d2ff, wireframe: false });
 
     const loader = new THREE.GLTFLoader();
-    
-    // Bypass browser cache to ensure we load the file you just downloaded
-    const cleanUrl = 'teeth.glb?nocache=' + Date.now();
-
-    loader.load(cleanUrl, function (gltf) {
+    loader.load('teeth.glb?nocache=' + Date.now(), function (gltf) {
       const rawModel = gltf.scene;
 
-      // 1. MEASURE THE MODEL
-      const box = new THREE.Box3().setFromObject(rawModel);
-      const size = new THREE.Vector3();
-      box.getSize(size);
-      const center = new THREE.Vector3();
-      box.getCenter(center);
-
-      // 2. ABSOLUTE CENTERING (Moves model to exact 0,0,0)
-      rawModel.position.x = -center.x;
-      rawModel.position.y = -center.y;
-      rawModel.position.z = -center.z;
-
-      // 3. AUTO-NORMALIZE SCALE (Forces the entire model to be EXACTLY 1 unit wide)
-      const normalizeScale = 1 / size.x;
-      rawModel.scale.set(normalizeScale, normalizeScale, normalizeScale);
-
-      // 4. FORCE COLOR OVERRIDE (Paints everything bright white)
+      // Force Material Override
       rawModel.traverse((child) => {
-        if (child.isMesh) {
-          child.material = brilliantWhiteMaterial;
-        }
+        if (child.isMesh) { child.material = diagnosticMaterial; }
       });
 
-      // Add the perfectly sized, perfectly centered model to our master group
+      // Center it
+      const box = new THREE.Box3().setFromObject(rawModel);
+      const center = new THREE.Vector3();
+      box.getCenter(center);
+      rawModel.position.sub(center);
+
       teethMasterGroup.add(rawModel);
       teethMasterGroup.visible = false;
-
       isModelReady = true;
-      statusText.innerText = "Asset normalized. Width set to 1.0. Ready.";
+      statusText.innerText = "Asset Loaded. Ready to Scan.";
       startButton.disabled = false;
-      startButton.innerText = "Start Live AR";
-
-    }, undefined, function (error) {
-      statusText.innerText = "ERROR: Could not find teeth.glb file. Please check folder.";
     });
 
-    // --- MEDIAPIPE AI SETUP ---
+    // --- MEDIAPIPE AI ---
     let faceLandmarker;
     let isARActive = false;
     let lastVideoTime = -1;
-
-    // The stencil mask to keep teeth inside the lips
-    const INNER_LIP_CONTOUR = [78, 191, 80, 81, 82, 13, 312, 311, 310, 415, 308, 324, 318, 402, 317, 14, 87, 178, 88, 95];
 
     async function initializeAI() {
       const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm");
@@ -130,6 +133,7 @@
     startButton.addEventListener("click", async () => {
       if (!isModelReady) return;
       document.getElementById("uiOverlay").style.display = "none";
+      controlsPanel.style.display = "block";
       
       const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
       video.srcObject = stream;
@@ -139,7 +143,6 @@
       });
     });
 
-    // --- RENDER & PHYSICS LOOP ---
     function renderLoop() {
       if (video.currentTime !== lastVideoTime) {
         lastVideoTime = video.currentTime;
@@ -150,56 +153,30 @@
         if (isARActive && results.faceLandmarks && results.faceLandmarks.length > 0) {
           const lm = results.faceLandmarks[0];
           
+          // ALWAYS SHOW TEETH (Removed mouth open requirement for debugging)
+          teethMasterGroup.visible = true;
+
           const leftCorner = lm[78];
           const rightCorner = lm[308];
           const topLipInner = lm[13];
           const bottomLipInner = lm[14];
 
-          // Pixels width and height of the mouth opening
-          const mouthWidthPx = (rightCorner.x - leftCorner.x) * 640;
-          const mouthHeightPx = (bottomLipInner.y - topLipInner.y) * 480;
+          const centerX = ((leftCorner.x + rightCorner.x) / 2) * 640;
+          const centerY = ((topLipInner.y + bottomLipInner.y) / 2) * 480;
 
-          // Only render if mouth is slightly open (avoids flickering)
-          if (mouthHeightPx > 5) {
-            teethMasterGroup.visible = true;
+          // Apply Sliders
+          teethMasterGroup.position.set((centerX - 320) + debugX, (240 - centerY) + debugY, 0);
+          teethMasterGroup.scale.set(debugScale, debugScale, debugScale);
 
-            // 1. POSITION: Find exact pixel center of the mouth opening
-            const centerX = ((leftCorner.x + rightCorner.x) / 2) * 640;
-            const centerY = ((topLipInner.y + bottomLipInner.y) / 2) * 480;
-            
-            // Convert to Three.js coordinates
-            teethMasterGroup.position.set(centerX - 320, 240 - centerY, 0);
+          // Head Rotation Tracking
+          const yaw = Math.atan2(rightCorner.z - leftCorner.z, rightCorner.x - leftCorner.x);
+          const roll = Math.atan2(rightCorner.y - leftCorner.y, rightCorner.x - leftCorner.x);
+          teethMasterGroup.rotation.set(0, yaw, -roll);
 
-            // 2. PERFECT 1:1 SCALING
-            // Because our model was normalized to exactly 1.0, setting the scale to the mouthWidthPx makes it fit perfectly!
-            // We multiply by 1.15 to add a tiny padding so it tucks into the corners of the lips nicely.
-            const exactScale = mouthWidthPx * 1.15;
-            teethMasterGroup.scale.set(exactScale, exactScale, exactScale);
+          renderer.render(scene, camera);
 
-            // 3. ROTATION (Yaw and Roll)
-            const yaw = Math.atan2(rightCorner.z - leftCorner.z, rightCorner.x - leftCorner.x);
-            const roll = Math.atan2(rightCorner.y - leftCorner.y, rightCorner.x - leftCorner.x);
-            teethMasterGroup.rotation.set(0, yaw, -roll);
-
-            renderer.render(scene, camera);
-
-            // 4. STENCIL CLIP: Hide any part of the 3D model that spills over the lips
-            mainCtx.save();
-            mainCtx.beginPath();
-            INNER_LIP_CONTOUR.forEach((idx, i) => {
-              const pt = lm[idx];
-              if (i === 0) mainCtx.moveTo(pt.x * 640, pt.y * 480);
-              else mainCtx.lineTo(pt.x * 640, pt.y * 480);
-            });
-            mainCtx.closePath();
-            mainCtx.clip(); 
-
-            mainCtx.drawImage(threeCanvas, 0, 0, 640, 480);
-            mainCtx.restore();
-
-          } else {
-            teethMasterGroup.visible = false;
-          }
+          // X-RAY MODE: No clipping mask! Just draw the teeth straight onto the camera!
+          mainCtx.drawImage(threeCanvas, 0, 0, 640, 480);
         }
       }
       window.requestAnimationFrame(renderLoop);
