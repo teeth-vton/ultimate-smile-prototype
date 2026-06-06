@@ -2,28 +2,66 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Ultimate Smile - Camera Force Sync (Fixed)</title>
+  <title>Ultimate Smile - VTO Experience</title>
   <style>
-    body { margin: 0; background: #000; color: #fff; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 20px; box-sizing: border-box; }
-    .ar-workspace { display: flex; gap: 20px; margin-bottom: 20px; flex-wrap: wrap; justify-content: center;}
-    .screen-panel { position: relative; width: 480px; height: 360px; border-radius: 12px; overflow: hidden; background: #111; border: 2px solid #444; }
+    /* Clean, Professional Branding UI */
+    body { margin: 0; background: #fafafa; color: #333; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 20px; box-sizing: border-box; }
+    .header { text-align: center; margin-bottom: 20px; }
+    .header h1 { margin: 0; color: #1e293b; font-size: 2rem; letter-spacing: -0.5px;}
+    .header p { margin: 5px 0 0 0; color: #64748b; font-size: 1rem; }
+    
+    .controls-panel { background: #fff; padding: 20px 30px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); width: 100%; max-width: 600px; margin-bottom: 20px; display: flex; flex-direction: column; align-items: center; border: 1px solid #e2e8f0; }
+    
+    /* Sleek Action Button */
+    #actionBtn { padding: 14px 40px; font-size: 16px; font-weight: bold; background: #2563eb; color: #fff; border: none; border-radius: 8px; cursor: pointer; transition: 0.2s; width: 100%; margin-bottom: 15px;}
+    #actionBtn:hover { background: #1d4ed8; }
+    #actionBtn:disabled { background: #cbd5e1; cursor: not-allowed; color: #64748b; }
+
+    /* The New Whitening Slider */
+    .slider-container { width: 100%; display: none; flex-direction: column; }
+    .slider-container label { font-weight: 600; margin-bottom: 8px; color: #475569; display: flex; justify-content: space-between;}
+    input[type=range] { width: 100%; cursor: pointer; accent-color: #2563eb; }
+
+    .ar-workspace { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center;}
+    
+    /* Modern Screen Panels */
+    .screen-panel { position: relative; width: 480px; height: 360px; border-radius: 16px; overflow: hidden; background: #e2e8f0; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
     .view-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: scaleX(-1); }
+    .panel-label { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.6); color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; z-index: 10;}
+    
     video { display: none; }
-    .debug-console { width: 100%; max-width: 980px; height: 120px; background: #111; border: 1px solid #333; padding: 10px; overflow-y: scroll; font-family: monospace; font-size: 12px; color: #0f0; margin-bottom: 20px; box-sizing: border-box; }
-    #actionBtn { padding: 15px 40px; font-size: 18px; font-weight: bold; background: #00d2ff; color: #000; border: none; border-radius: 30px; cursor: pointer; margin-bottom: 20px; transition: 0.3s;}
-    #actionBtn:disabled { background: #555; cursor: not-allowed; color: #aaa; }
+    
+    /* Hidden Debug Console (Bosses don't need to see code logs!) */
+    .debug-console { display: none; }
   </style>
 </head>
 <body>
 
-  <div class="header"><h1>ULTIMATE SMILE: AR SYNC FIXED</h1></div>
-  <button id="actionBtn">INITIALIZE ENGINE</button>
+  <div class="header">
+    <h1>Company Name AR</h1>
+    <p>Virtual Teeth Whitening Try-On</p>
+  </div>
+
+  <div class="controls-panel">
+    <button id="actionBtn">Start Virtual Try-On</button>
+    
+    <div class="slider-container" id="sliderUI">
+      <label>Whitening Intensity <span id="intensityVal">60%</span></label>
+      <input type="range" id="whiteSlider" min="0" max="1" step="0.05" value="0.6">
+    </div>
+  </div>
+
   <div class="debug-console" id="logs"></div>
 
-  <!-- Left Canvas shows Original, Right Canvas shows AR -->
   <div class="ar-workspace">
-    <div class="screen-panel"><canvas id="leftCanvas" class="view-canvas" width="480" height="360"></canvas></div>
-    <div class="screen-panel"><canvas id="rightCanvas" class="view-canvas" width="480" height="360"></canvas></div>
+    <div class="screen-panel">
+      <div class="panel-label">Original</div>
+      <canvas id="leftCanvas" class="view-canvas" width="480" height="360"></canvas>
+    </div>
+    <div class="screen-panel">
+      <div class="panel-label">Live Result</div>
+      <canvas id="rightCanvas" class="view-canvas" width="480" height="360"></canvas>
+    </div>
   </div>
 
   <video id="webcam" autoplay playsinline></video>
@@ -32,83 +70,79 @@
     import { FaceLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/vision_bundle.mjs";
 
     const logDiv = document.getElementById("logs");
-    function log(m) { 
-        logDiv.innerHTML += `<div>> ${m}</div>`; 
-        logDiv.scrollTop = logDiv.scrollHeight; 
-        console.log(m); 
-    }
-
-    // Catch invisible errors
-    window.onerror = function(msg) { log("CRITICAL ERROR: " + msg); };
+    function log(m) { logDiv.innerHTML += `<div>> ${m}</div>`; console.log(m); }
 
     const video = document.getElementById("webcam");
     const leftCtx = document.getElementById("leftCanvas").getContext("2d");
     const rightCtx = document.getElementById("rightCanvas").getContext("2d");
     
-    let landmarker;
-    let lastVideoTime = -1; // THE FIX: This prevents the freeze
+    // UI Elements
+    const btn = document.getElementById("actionBtn");
+    const sliderUI = document.getElementById("sliderUI");
+    const slider = document.getElementById("whiteSlider");
+    const intensityVal = document.getElementById("intensityVal");
 
-    document.getElementById("actionBtn").onclick = async () => {
-        const btn = document.getElementById("actionBtn");
+    // Update slider text live
+    slider.addEventListener('input', (e) => {
+      intensityVal.innerText = Math.round(e.target.value * 100) + '%';
+    });
+
+    let landmarker;
+    let lastVideoTime = -1; 
+
+    btn.onclick = async () => {
         btn.disabled = true;
-        btn.innerText = "LOADING AI... PLEASE WAIT";
+        btn.innerText = "Connecting to Camera...";
 
         try {
-            log("1. Requesting Camera Access...");
             const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 }, audio: false });
             video.srcObject = stream;
             
-            log("2. Waiting for video feed to sync...");
             await new Promise((resolve) => {
-                video.onloadedmetadata = () => {
-                    video.play();
-                    resolve();
-                };
+                video.onloadedmetadata = () => { video.play(); resolve(); };
             });
-            log("3. Camera Stream Active.");
 
-            log("4. Downloading Google AI Model (This takes 3-5 seconds)...");
+            btn.innerText = "Loading AI Engine...";
             const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm");
             
             landmarker = await FaceLandmarker.createFromOptions(vision, { 
                 baseOptions: { 
                     modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task", 
-                    delegate: "GPU" // Forces it to use the graphics card
+                    delegate: "GPU" 
                 }, 
                 runningMode: "VIDEO",
                 numFaces: 1
             });
-            log("5. AI Engine Online! Starting AR Loop.");
             
+            // UI Switch: Hide button, show slider
             btn.style.display = "none";
+            sliderUI.style.display = "flex";
+            
             requestAnimationFrame(loop);
 
         } catch (e) {
             log("ERROR: " + e.message);
             btn.disabled = false;
-            btn.innerText = "RETRY INITIALIZATION";
+            btn.innerText = "Error - Try Again";
         }
     };
 
     function loop() {
-        // THE FIX APPLIED: Only run the AI if the video has actually pushed a new frame
         if (video.readyState >= 2 && video.currentTime !== lastVideoTime) {
             lastVideoTime = video.currentTime;
             
-            // Analyze the face
             const res = landmarker.detectForVideo(video, performance.now());
             
-            // Draw the normal video feed onto both screens
+            // Draw clean video to both
             leftCtx.drawImage(video, 0, 0, 480, 360);
             rightCtx.drawImage(video, 0, 0, 480, 360);
             
-            // Apply AR to the right screen
             if(res.faceLandmarks && res.faceLandmarks.length > 0) {
                 const lm = res.faceLandmarks[0];
                 const p = [78, 191, 80, 81, 82, 13, 312, 311, 310, 415, 308, 324, 318, 402, 317, 14, 87, 178, 88, 95];
                 
-                // Check if the mouth is open
                 const mouthOpen = (lm[14].y - lm[13].y) * 480;
+                
                 if(mouthOpen > 5) {
                     rightCtx.save();
                     rightCtx.beginPath();
@@ -120,19 +154,20 @@
                     });
                     rightCtx.closePath();
                     
-                    // Isolate the area inside the lips
                     rightCtx.clip();
                     
-                    // AR Whitening Magic (Overlay makes it realistic instead of solid paint)
+                    // CUSTOMIZATION: Add a slight blur to the edges so it looks natural
+                    rightCtx.filter = 'blur(3px)';
+                    
+                    // CUSTOMIZATION: Use the slider value for the alpha transparency!
                     rightCtx.globalCompositeOperation = "overlay";
-                    rightCtx.fillStyle = "rgba(255, 255, 255, 0.6)"; 
+                    rightCtx.fillStyle = `rgba(255, 255, 255, ${slider.value})`; 
                     rightCtx.fillRect(0, 0, 480, 360);
                     
                     rightCtx.restore();
                 }
             }
         }
-        // Tell the browser to loop this function forever
         requestAnimationFrame(loop);
     }
   </script>
