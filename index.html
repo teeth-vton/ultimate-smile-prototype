@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Smart 3D Teeth VTO</title>
+  <title>3D Teeth VTO - Debug Enabled</title>
   <script type="importmap">
     {
       "imports": {
@@ -15,11 +15,11 @@
   <style>
     body { margin: 0; background: #000; }
     #container { width: 100vw; height: 100vh; position: relative; }
-    #startBtn { position: absolute; z-index: 10; top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 20px 40px; font-size: 20px; cursor: pointer; border-radius: 10px; border: none; background: #00d2ff; }
+    #startBtn { position: absolute; z-index: 10; top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 20px 40px; font-size: 20px; cursor: pointer; }
   </style>
 </head>
 <body>
-  <button id="startBtn">INITIALIZE ENGINE</button>
+  <button id="startBtn">INITIALIZE 3D ENGINE</button>
   <div id="container"></div>
 
   <script type="module">
@@ -27,7 +27,8 @@
     import { MindARThree } from 'mindar-face-three';
     import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-    const mindarThree = new MindARThree({ container: document.querySelector("#container") });
+    const container = document.querySelector("#container");
+    const mindarThree = new MindARThree({ container: container });
     const { renderer, scene, camera } = mindarThree;
 
     // Lights
@@ -37,41 +38,41 @@
     const anchor = mindarThree.addAnchor(10); 
     let teethModel;
 
+    // Load Model with Error Handling
     const loader = new GLTFLoader();
-  loader.load('./teeth.glb', (gltf) => {
-      teethModel = gltf.scene;
-      teethModel.scale.set(0.5, 0.5, 0.5); 
-      teethModel.position.set(0, -0.6, 0.05); 
-      teethModel.visible = false; 
-      anchor.group.add(teethModel);
-      console.log("3D Model successfully loaded!");
-    }, 
-    (xhr) => { 
-      console.log((xhr.loaded / xhr.total * 100) + '% loaded'); 
-    }, 
-    (error) => { 
-      console.error('An error happened while loading the model:', error); 
-    });
+    loader.load(
+      './teeth.glb', 
+      (gltf) => {
+        teethModel = gltf.scene;
+        teethModel.scale.set(0.5, 0.5, 0.5); 
+        teethModel.position.set(0, -0.6, 0.05); 
+        teethModel.visible = false; 
+        anchor.group.add(teethModel);
+        console.log("Model loaded successfully!");
+      },
+      (xhr) => console.log((xhr.loaded / xhr.total * 100) + '% loaded'),
+      (error) => console.error('An error happened loading the GLB:', error)
+    );
 
-    // Start Logic
     document.getElementById("startBtn").onclick = async () => {
-      await mindarThree.start();
-      document.getElementById("startBtn").style.display = 'none';
+      try {
+        await mindarThree.start();
+        document.getElementById("startBtn").style.display = 'none';
 
-      renderer.setAnimationLoop(() => {
-        // GET THE MOUTH OPEN STATE
-        // MindAR detects facial expressions via the anchor's underlying tracking data
-        const face = mindarThree.faceMesh;
-        if(teethModel) {
-            // Check if mouth is open (Logic based on blendshape estimation)
-            // If the model is detected, we check the mouth opening state
-            // 0.1 is the threshold: if mouth opening > 10%, show teeth
-            const isMouthOpen = face.getBlendshapes ? face.getBlendshapes().jawOpen > 0.1 : true; 
-            teethModel.visible = isMouthOpen;
-        }
-        
-        renderer.render(scene, camera);
-      });
+        renderer.setAnimationLoop(() => {
+          if (teethModel) {
+            // MOUTH OPENING LOGIC
+            // MindAR faceMesh provides the tracking data
+            const face = mindarThree.faceMesh;
+            // Check if mouth is open using blendshapes
+            const mouthOpen = face.getBlendshapes ? face.getBlendshapes().jawOpen : 0;
+            teethModel.visible = mouthOpen > 0.05;
+          }
+          renderer.render(scene, camera);
+        });
+      } catch (e) {
+        console.error("Engine failed to start:", e);
+      }
     };
   </script>
 </body>
