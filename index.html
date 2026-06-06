@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>3D Teeth VTO - Debug Enabled</title>
+  <title>3D Teeth VTO - Verification</title>
   <script type="importmap">
     {
       "imports": {
@@ -19,7 +19,7 @@
   </style>
 </head>
 <body>
-  <button id="startBtn">INITIALIZE 3D ENGINE</button>
+  <button id="startBtn">START VTO</button>
   <div id="container"></div>
 
   <script type="module">
@@ -27,52 +27,32 @@
     import { MindARThree } from 'mindar-face-three';
     import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-    const container = document.querySelector("#container");
-    const mindarThree = new MindARThree({ container: container });
+    const mindarThree = new MindARThree({ container: document.querySelector("#container") });
     const { renderer, scene, camera } = mindarThree;
 
-    // Lights
-    const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
-    scene.add(light);
+    // Lights - MUST HAVE for 3D visibility
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.5);
+    scene.add(ambientLight);
 
+    // Anchor to the mouth (Index 10)
     const anchor = mindarThree.addAnchor(10); 
-    let teethModel;
-
-    // Load Model with Error Handling
+    
     const loader = new GLTFLoader();
-    loader.load(
-      './teeth.glb', 
-      (gltf) => {
-        teethModel = gltf.scene;
-        teethModel.scale.set(0.5, 0.5, 0.5); 
-        teethModel.position.set(0, -0.6, 0.05); 
-        teethModel.visible = false; 
-        anchor.group.add(teethModel);
-        console.log("Model loaded successfully!");
-      },
-      (xhr) => console.log((xhr.loaded / xhr.total * 100) + '% loaded'),
-      (error) => console.error('An error happened loading the GLB:', error)
-    );
+    loader.load('./teeth.glb', (gltf) => {
+      const teeth = gltf.scene;
+      // Make it LARGE to ensure we can see it
+      teeth.scale.set(5, 5, 5); 
+      // Offset from anchor
+      teeth.position.set(0, -0.2, 0); 
+      anchor.group.add(teeth);
+    });
 
     document.getElementById("startBtn").onclick = async () => {
-      try {
-        await mindarThree.start();
-        document.getElementById("startBtn").style.display = 'none';
-
-        renderer.setAnimationLoop(() => {
-          if (teethModel) {
-            // MOUTH OPENING LOGIC
-            // MindAR faceMesh provides the tracking data
-            const face = mindarThree.faceMesh;
-            // Check if mouth is open using blendshapes
-            const mouthOpen = face.getBlendshapes ? face.getBlendshapes().jawOpen : 0;
-            teethModel.visible = mouthOpen > 0.05;
-          }
-          renderer.render(scene, camera);
-        });
-      } catch (e) {
-        console.error("Engine failed to start:", e);
-      }
+      await mindarThree.start();
+      document.getElementById("startBtn").style.display = 'none';
+      renderer.setAnimationLoop(() => {
+        renderer.render(scene, camera);
+      });
     };
   </script>
 </body>
