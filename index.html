@@ -42,20 +42,16 @@
 
     // 3. Load Model
     const loader = new GLTFLoader();
-   loader.load('./teeth.glb', (gltf) => {
+ // Ensure the model is added to the group, NOT the scene
+loader.load('./teeth.glb', (gltf) => {
   const teeth = gltf.scene;
-  
-  // Try these values to bring it down to your mouth
-  // Scale: Make it visible first
   teeth.scale.set(0.5, 0.5, 0.5); 
   
-  // Position: 
-  // X (0) = Keep centered
-  // Y (-0.5) = Move down from forehead to mouth (Adjust this to lower it)
-  // Z (0.2) = Move forward/backward relative to face
-  teeth.position.set(0, -0.5, 0.2); 
+  // Try these refined coordinates
+  teeth.position.set(0, -0.6, 0.05); 
   
-  anchor.group.add(teeth);
+  // THIS IS THE KEY: Add it to the anchor group, NOT the scene
+  anchor.group.add(teeth); 
 });
     // 4. Start Engine
     document.getElementById("startBtn").onclick = async () => {
