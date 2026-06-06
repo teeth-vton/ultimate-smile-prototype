@@ -2,63 +2,205 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Banuba AR VTO</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ultimate Enterprise AR Teeth Whitening</title>
   <style>
-    body { background: #111; display: flex; flex-direction: column; align-items: center; height: 100vh; margin: 0; font-family: sans-serif; color: white; justify-content: center; }
-    #webar-player { width: 100%; max-width: 640px; border-radius: 12px; background: #000; box-shadow: 0 10px 30px rgba(0,0,0,0.8); aspect-ratio: 4/3; }
-    #status { margin-bottom: 20px; font-weight: bold; color: #4ade80; text-align: center; padding: 0 20px;}
-    
-    /* The Start Button that unlocks the browser camera block */
-    button { padding: 15px 30px; font-size: 18px; font-weight: bold; cursor: pointer; background: #4ade80; color: #111; border: none; border-radius: 8px; margin-bottom: 20px;}
-    button:hover { background: #22c55e; }
+    /* ----------------------------------------- */
+    /* 1. PROFESSIONAL CSS STYLING & LAYOUT      */
+    /* ----------------------------------------- */
+    body { 
+      margin: 0; 
+      background-color: #0f172a; 
+      color: #f8fafc; 
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+      display: flex; 
+      flex-direction: column; 
+      align-items: center; 
+      min-height: 100vh;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+
+    h1 { margin-top: 0; font-size: 1.5rem; color: #38bdf8; text-transform: uppercase; letter-spacing: 1px;}
+
+    /* The main video container */
+    #webar-player { 
+      width: 100%; 
+      max-width: 720px; 
+      border-radius: 16px; 
+      overflow: hidden; 
+      box-shadow: 0 20px 40px rgba(0,0,0,0.9); 
+      background: #000; 
+      display: flex; 
+      justify-content: center; 
+      align-items: center; 
+      aspect-ratio: 4/3;
+      border: 2px solid #334155;
+      position: relative;
+    }
+
+    /* Start button styling */
+    #start-btn { 
+      padding: 16px 32px; 
+      font-size: 1.2rem; 
+      font-weight: 800; 
+      cursor: pointer; 
+      background: #10b981; 
+      color: #fff; 
+      border: none; 
+      border-radius: 12px; 
+      margin-bottom: 20px;
+      transition: all 0.2s ease-in-out;
+      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+    }
+    #start-btn:hover { background: #059669; transform: translateY(-2px); }
+    #start-btn:disabled { background: #475569; cursor: not-allowed; transform: none; box-shadow: none;}
+
+    /* ----------------------------------------- */
+    /* 2. ON-SCREEN TERMINAL LOGGING STYLES      */
+    /* ----------------------------------------- */
+    #debug-console {
+      width: 100%;
+      max-width: 720px;
+      background: #1e293b;
+      border-radius: 8px;
+      padding: 15px;
+      margin-top: 20px;
+      font-family: monospace;
+      font-size: 0.9rem;
+      height: 200px;
+      overflow-y: auto;
+      border: 1px solid #475569;
+      box-sizing: border-box;
+    }
+    .log-line { margin: 4px 0; border-bottom: 1px solid #334155; padding-bottom: 4px; }
+    .log-info { color: #38bdf8; }
+    .log-success { color: #10b981; font-weight: bold; }
+    .log-error { color: #ef4444; font-weight: bold; background: rgba(239, 68, 68, 0.1); padding: 4px; }
+    .log-warn { color: #f59e0b; }
   </style>
 </head>
 <body>
 
-  <button id="start-btn">📸 Start Virtual Try-On</button>
-  <div id="status">Waiting to start...</div>
-  <div id="webar-player"></div>
+  <h1>🦷 Virtual Teeth Try-On Engine</h1>
+  <button id="start-btn">Initialize Camera & AR Engine</button>
+  
+  <div id="webar-player">
+    <!-- The Banuba AR canvas will inject itself right here -->
+  </div>
+
+  <!-- This is your on-screen terminal. It replaces PowerShell. -->
+  <div id="debug-console">
+    <div class="log-line log-info">[System] Debug console initialized. Waiting for user input...</div>
+  </div>
 
   <script type="module">
-    import { Webcam, Player, Module, Effect, Dom } from 'https://cdn.jsdelivr.net/npm/@banuba/webar/dist/BanubaSDK.browser.esm.min.js';
+    /* ----------------------------------------- */
+    /* 3. ON-SCREEN LOGGING SYSTEM               */
+    /* ----------------------------------------- */
+    const debugConsole = document.getElementById('debug-console');
+    
+    // Custom function to write directly to the screen
+    function logToScreen(message, type = 'info') {
+      const line = document.createElement('div');
+      line.className = `log-line log-${type}`;
+      const time = new Date().toLocaleTimeString();
+      line.innerText = `[${time}] ${message}`;
+      debugConsole.appendChild(line);
+      // Auto-scroll to the bottom so you always see the latest log
+      debugConsole.scrollTop = debugConsole.scrollHeight; 
+      console.log(`[${type.toUpperCase()}] ${message}`);
+    }
 
-    // We wait for the user to click the button before asking for the camera
-    document.getElementById('start-btn').addEventListener('click', async () => {
+    // Catch random unseen website errors and force them onto the screen
+    window.onerror = function(msg, url, lineNo, columnNo, error) {
+      logToScreen(`CRITICAL SCRIPT ERROR: ${msg} (Line: ${lineNo})`, 'error');
+      return false;
+    };
+
+    /* ----------------------------------------- */
+    /* 4. SDK MODULE IMPORTS (STABLE VERSION)    */
+    /* ----------------------------------------- */
+    // Explicitly using version 1.18.1 so the CDN never breaks unexpectedly
+    import { Webcam, Player, Module, Effect, Dom } from 'https://cdn.jsdelivr.net/npm/@banuba/webar@1.18.1/dist/BanubaSDK.browser.esm.js';
+
+    /* ----------------------------------------- */
+    /* 5. MAIN AR INITIALIZATION FUNCTION        */
+    /* ----------------------------------------- */
+    async function startVirtualTryOn() {
+      const startBtn = document.getElementById('start-btn');
+      startBtn.disabled = true;
+      startBtn.innerText = "Loading... Please Wait";
       
-      // Hide the button and update text
-      document.getElementById('start-btn').style.display = 'none';
-      document.getElementById('status').innerText = "Loading AI Engine... (Please click 'Allow' on the camera prompt)";
+      logToScreen("Starting sequence initiated...", "info");
 
       try {
+        // STEP 1: FORCE CAMERA PERMISSION FIRST
+        logToScreen("Requesting strict hardware camera access from browser...", "warn");
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+          logToScreen("Browser granted camera permission successfully!", "success");
+          // Stop the test stream so Banuba can take over
+          stream.getTracks().forEach(track => track.stop()); 
+        } catch (camErr) {
+          throw new Error("Camera blocked by browser. Please click the padlock icon in your URL bar and explicitly ALLOW the camera.");
+        }
+
+        // STEP 2: BOOT BANUBA AI ENGINE
+        logToScreen("Connecting to Banuba Engine with your Client Token...", "info");
         const player = await Player.create({
           clientToken: 'Qk5CIAnZ5QCVvwyhPDHnIWjc3+QSQYDbFloei6q+6wZPVQacNxvodLMeMN1Z6u+eMjsVO2RnoQEQvvqcTpFxGyGvZ2gM8fOpciy133xGGkHjm83uMYgANT5XlDOEkQ2jO1NtbO31RLxAPv1HZawc+E/V6l/rRy/21N11YNrAR9jxFqQdJFF3AnsxPdkehXSppDgTV5QZVxz8ovO3d3xD0bNwv7zw31tqAMShrEPEFGM4wIED7rs98sL7+rXv6HNkiQOR0zaiLMHCYMY7y5QoApY8bZqSwJPfMoI/4nRPh92V9j2w8t+5L4sASql9IeicNUN1GgSRo4GoveD4HzdSytBsV+PiV4Mh+7AZV54rU4kVh0slIXBOK72e7YR+l3hPNJiSwDMJDc/9i3KnUwl+aDhxGP5JRlov6TzTiJ7FmyPxMveiZO94UvJtq3xktx3s1sGTRPXF1lGXaWAEBN5oAb2Nh3nN7UbV1ooC3y8+Qnns/agZnJ0DdU25LPNvZ/cvllQuuSu9IUv9gDy5N5QzUTmQ+JcUxM1BNWQmlDSwQtSwpXjQvJdme1OcuNV7N4PU6yCLlh+/kQmSOVeKxiQPdYrUqsKht2NNnrnNv09zwfky6fqeHJSVsbD5lJ5jtdpBVc+dJZazQk7f7IiUg4rCSQ==',
           locateFile: {
-            'BanubaSDK.wasm': 'https://cdn.jsdelivr.net/npm/@banuba/webar/dist/BanubaSDK.wasm',
-            'BanubaSDK.simd.wasm': 'https://cdn.jsdelivr.net/npm/@banuba/webar/dist/BanubaSDK.simd.wasm',
-            'BanubaSDK.data': 'https://cdn.jsdelivr.net/npm/@banuba/webar/dist/BanubaSDK.data',
+            'BanubaSDK.wasm': 'https://cdn.jsdelivr.net/npm/@banuba/webar@1.18.1/dist/BanubaSDK.wasm',
+            'BanubaSDK.simd.wasm': 'https://cdn.jsdelivr.net/npm/@banuba/webar@1.18.1/dist/BanubaSDK.simd.wasm',
+            'BanubaSDK.data': 'https://cdn.jsdelivr.net/npm/@banuba/webar@1.18.1/dist/BanubaSDK.data',
           }
         });
+        logToScreen("Player created successfully. Token accepted for this domain.", "success");
 
-        document.getElementById('status').innerText = "Loading Face Tracking...";
-        await player.addModule(new Module('https://cdn.jsdelivr.net/npm/@banuba/webar/dist/modules/face_tracker.zip'));
+        // STEP 3: LOAD NEURAL NETWORK FOR FACE TRACKING
+        logToScreen("Downloading Heavy Face Tracking Neural Network (this may take a few seconds)...", "warn");
+        await player.addModule(new Module('https://cdn.jsdelivr.net/npm/@banuba/webar@1.18.1/dist/modules/face_tracker.zip'));
+        logToScreen("Face Tracker module integrated.", "success");
 
-        document.getElementById('status').innerText = "Starting Camera...";
+        // STEP 4: BIND WEBCAM TO PLAYER
+        logToScreen("Binding webcam feed into the AR Engine...", "info");
         await player.use(new Webcam());
         Dom.render(player, '#webar-player');
+        logToScreen("Webcam rendering mounted to screen.", "success");
 
-        document.getElementById('status').innerText = "Applying Teeth AR...";
+        // STEP 5: APPLY YOUR LOCAL ZIP FILE
+        logToScreen("Fetching local file: './TeethWitening_Toggle.zip'...", "info");
         const effect = new Effect('./TeethWitening_Toggle.zip'); 
         await player.applyEffect(effect);
+        logToScreen("Teeth AR Effect successfully applied!", "success");
 
-        document.getElementById('status').innerText = "🦷 Live AR Active!";
+        // SUCCESS STATE
+        startBtn.style.display = 'none'; // Hide button on perfect success
+        logToScreen("SYSTEM ONLINE. Virtual Try-On is now live.", "success");
 
       } catch (error) {
-        console.error("AR Error:", error);
-        document.getElementById('status').style.color = "#ff4444";
-        // This line will print the EXACT reason it failed to your screen
-        document.getElementById('status').innerText = "ERROR: " + error.message; 
+        // IF ANYTHING BREAKS, IT CATCHES THE ERROR AND PRINTS IT IN RED HERE
+        startBtn.innerText = "Error - Check Logs";
+        logToScreen("SYSTEM HALTED DUE TO ERROR:", "error");
+        
+        // Print the specific reason it failed
+        if (error.message) {
+          logToScreen(error.message, "error");
+        } else {
+          logToScreen(JSON.stringify(error), "error");
+        }
+        
+        // Common token mismatch hint
+        if(error.message && error.message.includes("token")) {
+           logToScreen("HINT: It looks like a Token Domain mismatch. Make sure Vercel's URL matches what you registered on Banuba.", "warn");
+        }
       }
-    });
+    }
+
+    // Attach the function to the button click
+    document.getElementById('start-btn').addEventListener('click', startVirtualTryOn);
+
   </script>
 </body>
 </html>
