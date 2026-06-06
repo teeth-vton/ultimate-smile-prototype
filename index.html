@@ -2,16 +2,146 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Hyper-Realistic Dental AR Engine</title>
+  <title>Ultimate Smile - Master AR Engine</title>
   <style>
-    body { margin: 0; background: #000; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: sans-serif; overflow: hidden; }
-    .canvas-container { position: relative; width: 640px; height: 480px; border-radius: 16px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.9); }
-    #webcamCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: scaleX(-1); }
-    #threeCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: scaleX(-1); pointer-events: none; }
+    body { 
+      margin: 0; 
+      background: #0d0d0d; 
+      display: flex; 
+      flex-direction: column; 
+      align-items: center; 
+      justify-content: flex-start; 
+      min-height: 100vh; 
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+      color: #ffffff;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+    
+    .header-panel {
+      text-align: center;
+      margin-bottom: 15px;
+      width: 100%;
+      max-width: 1000px;
+    }
+    
+    .main-title {
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: 2px;
+      margin: 0 0 5px 0;
+      color: #fff;
+    }
+
+    /* SYSTEM CONSOLE LOGS DIRECTLY TO SCREEN */
+    .debug-console {
+      width: 100%;
+      max-width: 980px;
+      background: #141419;
+      border-left: 4px solid #00d2ff;
+      padding: 12px;
+      border-radius: 6px;
+      font-family: monospace;
+      font-size: 12px;
+      margin-bottom: 20px;
+      box-sizing: border-box;
+      max-height: 100px;
+      overflow-y: auto;
+    }
+    .log-entry { margin-bottom: 4px; color: #aaa; }
+    .log-success { color: #00ff66; font-weight: bold; }
+    .log-error { color: #ff3333; font-weight: bold; }
+
+    /* SPLIT SCREEN SIDE BY SIDE LAYOUT */
+    .workspace { 
+      display: flex; 
+      gap: 20px; 
+      justify-content: center; 
+      align-items: center; 
+      width: 100%;
+      max-width: 1000px;
+      margin-bottom: 20px;
+    }
+    
+    .display-card { 
+      position: relative; 
+      width: 480px; 
+      height: 360px; 
+      border-radius: 12px; 
+      overflow: hidden; 
+      background: #000; 
+      border: 2px solid #222;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.7);
+    }
+    
+    .card-label { 
+      position: absolute; 
+      top: 12px; 
+      left: 12px; 
+      background: rgba(0, 0, 0, 0.85); 
+      padding: 6px 12px; 
+      border-radius: 6px; 
+      font-size: 11px; 
+      font-weight: bold; 
+      z-index: 10;
+      letter-spacing: 0.5px;
+    }
+    
+    .view-canvas { 
+      position: absolute; 
+      top: 0; 
+      left: 0; 
+      width: 100%; 
+      height: 100%; 
+      transform: scaleX(-1); 
+    }
+    
+    #threeHiddenCanvas { display: none; }
     video { display: none; }
-    #loadingOverlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #111; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10; color: white; }
-    #startBtn { padding: 14px 35px; font-size: 16px; font-weight: bold; background: #fff; color: #000; border: none; border-radius: 25px; cursor: pointer; margin-top: 15px; }
-    #startBtn:disabled { background: #444; color: #888; cursor: not-allowed; }
+    
+    #actionButton { 
+      padding: 14px 40px; 
+      font-size: 15px; 
+      font-weight: bold; 
+      background: #ffffff; 
+      color: #000000; 
+      border: none; 
+      border-radius: 30px; 
+      cursor: pointer; 
+      transition: transform 0.2s, background 0.2s;
+      box-shadow: 0 5px 20px rgba(255,255,255,0.1);
+    }
+    #actionButton:hover { transform: scale(1.03); background: #f0f0f0; }
+    #actionButton:disabled { background: #222; color: #555; cursor: not-allowed; transform: none; }
+    
+    /* HARDWARE ADJUSTMENT CALIBRATION PANEL */
+    .calibration-box { 
+      width: 100%; 
+      max-width: 980px; 
+      background: #111115; 
+      padding: 20px; 
+      box-sizing: border-box; 
+      border-radius: 12px; 
+      border: 1px solid #222;
+    }
+    .panel-heading {
+      font-size: 12px;
+      text-transform: uppercase;
+      color: #00d2ff;
+      letter-spacing: 1px;
+      margin-bottom: 15px;
+      font-weight: bold;
+    }
+    .slider-row { 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      margin-bottom: 12px; 
+    }
+    .slider-row:last-child { margin-bottom: 0; }
+    label { font-size: 13px; width: 200px; color: #bbb; }
+    input[type=range] { flex-grow: 1; margin: 0 20px; accent-color: #00d2ff; }
+    .value-display { width: 60px; text-align: right; font-size: 13px; font-family: monospace; color: #00d2ff; font-weight: bold;}
   </style>
 
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/vision_bundle.mjs" type="module"></script>
@@ -20,13 +150,53 @@
 </head>
 <body>
 
-  <div class="canvas-container">
-    <canvas id="webcamCanvas" width="640" height="480"></canvas>
-    <canvas id="threeCanvas" width="640" height="480"></canvas>
+  <div class="header-panel">
+    <h1 class="main-title">INTEGRATED AR PRODUCTION SUITE</h1>
+    <button id="actionButton" disabled>System Initializing...</button>
+  </div>
+
+  <div class="debug-console" id="consoleOutput">
+    <div class="log-entry">System: Initializing core architecture modules...</div>
+  </div>
+
+  <div class="workspace">
+    <div class="display-card" style="border-color: #ff4444;">
+      <div class="card-label" style="color: #ff4444;">LEFT: LIVE MATHEMATICAL FACE MESH</div>
+      <canvas id="leftCanvas" class="view-canvas" width="480" height="360"></canvas>
+    </div>
+
+    <div class="display-card" style="border-color: #00d2ff;">
+      <div class="card-label" style="color: #00d2ff;">RIGHT: LIVE REALITY TRY-ON OVERLAY</div>
+      <canvas id="rightCanvas" class="view-canvas" width="480" height="360"></canvas>
+      <canvas id="threeHiddenCanvas" width="480" height="360"></canvas>
+    </div>
+  </div>
+
+  <div class="calibration-box">
+    <div class="panel-heading">Manual Hardware Calibration (Fine-Tune 3D Model Fit)</div>
     
-    <div id="loadingOverlay">
-      <h3 style="margin:0;">DENTAL TRY-ON ENGINE</h3>
-      <button id="startBtn" disabled>Loading 3D Assets...</button>
+    <div class="slider-row">
+      <label>Overall Scale Size multiplier</label>
+      <input type="range" id="scaleModifier" min="0.1" max="4.0" step="0.01" value="1.00">
+      <span class="value-display" id="scaleValueText">1.00x</span>
+    </div>
+    
+    <div class="slider-row">
+      <label>Vertical Position Adjust (Y-Axis)</label>
+      <input type="range" id="yAxisModifier" min="-150" max="150" step="1" value="0">
+      <span class="value-display" id="yAxisValueText">0px</span>
+    </div>
+
+    <div class="slider-row">
+      <label>Depth In/Out Position (Z-Axis)</label>
+      <input type="range" id="zAxisModifier" min="-200" max="200" step="1" value="0">
+      <span class="value-display" id="zAxisValueText">0px</span>
+    </div>
+
+    <div class="slider-row">
+      <label>Jaw Drop Hinge Amplitude</label>
+      <input type="range" id="hingeModifier" min="0.0" max="3.0" step="0.1" value="1.0">
+      <span class="value-display" id="hingeValueText">1.0x</span>
     </div>
   </div>
 
@@ -35,187 +205,266 @@
   <script type="module">
     import { FaceLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/vision_bundle.mjs";
 
+    // DOM Links
     const video = document.getElementById("webcam");
-    const webcamCanvas = document.getElementById("webcamCanvas");
-    const webcamCtx = webcamCanvas.getContext("2d");
-    const threeCanvas = document.getElementById("threeCanvas");
-    const startBtn = document.getElementById("startBtn");
-    const loadingOverlay = document.getElementById("loadingOverlay");
+    const leftCtx = document.getElementById("leftCanvas").getContext("2d");
+    const rightCtx = document.getElementById("rightCanvas").getContext("2d");
+    const threeHiddenCanvas = document.getElementById("threeHiddenCanvas");
+    const actionButton = document.getElementById("actionButton");
+    const consoleOutput = document.getElementById("consoleOutput");
 
-    // --- 1. PROPER PERSPECTIVE 3D ENGINE ---
+    // Dynamic Tracking State Modifiers
+    let adjustmentScale = 1.00;
+    let adjustmentY = 0;
+    let adjustmentZ = 0;
+    let adjustmentHinge = 1.0;
+
+    // Connect Sliders to Variables
+    document.getElementById('scaleModifier').addEventListener('input', (e) => { adjustmentScale = parseFloat(e.target.value); document.getElementById('scaleValueText').innerText = adjustmentScale.toFixed(2) + 'x'; });
+    document.getElementById('yAxisModifier').addEventListener('input', (e) => { adjustmentY = parseInt(e.target.value); document.getElementById('yAxisValueText').innerText = adjustmentY + 'px'; });
+    document.getElementById('zAxisModifier').addEventListener('input', (e) => { adjustmentZ = parseInt(e.target.value); document.getElementById('zAxisValueText').innerText = adjustmentZ + 'px'; });
+    document.getElementById('hingeModifier').addEventListener('input', (e) => { adjustmentHinge = parseFloat(e.target.value); document.getElementById('hingeValueText').innerText = adjustmentHinge.toFixed(1) + 'x'; });
+
+    function writeLog(text, type = 'normal') {
+      const entry = document.createElement('div');
+      entry.className = `log-entry ${type === 'success' ? 'log-success' : type === 'error' ? 'log-error' : ''}`;
+      entry.innerText = `[${new Date().toLocaleTimeString()}] ${text}`;
+      consoleOutput.appendChild(entry);
+      consoleOutput.scrollTop = consoleOutput.scrollHeight;
+    }
+
+    // --- THREE.JS GRAPHICS SETUP ---
     const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(40, 480 / 360, 0.1, 2000);
+    camera.position.set(0, 0, 0); // Camera anchored at origin, looking directly down negative Z space
+
+    const renderer = new THREE.WebGLRenderer({ canvas: threeHiddenCanvas, alpha: true, antialias: true });
+    renderer.setSize(480, 360);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+    scene.add(new THREE.AmbientLight(0xffffff, 1.5));
+    const pointLight = new THREE.PointLight(0xffffff, 0.8);
+    pointLight.position.set(0, 50, 100);
+    scene.add(pointLight);
+
+    let upperJawGroup = new THREE.Group();
+    let lowerJawGroup = new THREE.Group();
+    let masterAssetContainer = new THREE.Group();
     
-    // Using a 45-degree Perspective camera matches standard webcam focal depth distortion
-    const camera = new THREE.PerspectiveCamera(45, 640 / 480, 0.1, 1000);
-    camera.position.set(0, 0, 0); // Camera sits at origin; we move objects out in negative Z space
+    masterAssetContainer.add(upperJawGroup);
+    masterAssetContainer.add(lowerJawGroup);
+    scene.add(masterAssetContainer);
 
-    const renderer = new THREE.WebGLRenderer({ canvas: threeCanvas, alpha: true, antialias: true });
-    renderer.setSize(640, 480);
-    renderer.setPixelRatio(window.devicePixelRatio);
+    let isModelLoaded = false;
+    let structuralModelWidth = 1.0;
 
-    scene.add(new THREE.AmbientLight(0xffffff, 1.4));
-    const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    dirLight.position.set(0, 40, 100);
-    scene.add(dirLight);
-
-    let upperJaw = new THREE.Group();
-    let lowerJaw = new THREE.Group();
-    let dentalKit = new THREE.Group();
-    
-    dentalKit.add(upperJaw);
-    dentalKit.add(lowerJaw);
-    scene.add(dentalKit);
-
-    let isModelReady = false;
-    let baseModelWidth = 1;
+    writeLog("Three.js context generated successfully. Loading teeth.glb...");
 
     const loader = new THREE.GLTFLoader();
     loader.load('teeth.glb?nocache=' + Date.now(), function (gltf) {
-      const model = gltf.scene;
+      try {
+        const structuralModel = gltf.scene;
+        
+        const calculationBox = new THREE.Box3().setFromObject(structuralModel);
+        const physicalCenter = new THREE.Vector3();
+        calculationBox.getCenter(physicalCenter);
+        const physicalSize = new THREE.Vector3();
+        calculationBox.getSize(physicalSize);
+        
+        structuralModelWidth = physicalSize.x;
+        writeLog(`Model Loaded! Geometry size dimensions: Width: ${physicalSize.x.toFixed(2)}, Height: ${physicalSize.y.toFixed(2)}`, 'success');
 
-      // Find precise structural center
-      const box = new THREE.Box3().setFromObject(model);
-      const center = new THREE.Vector3();
-      box.getCenter(center);
-      const size = new THREE.Vector3();
-      box.getSize(size);
-      
-      baseModelWidth = size.x;
+        structuralModel.traverse((child) => {
+          if (child.isMesh) {
+            // Apply clean physical enamel lighting texture map variables
+            child.material = new THREE.MeshPhysicalMaterial({
+              color: child.material.color || new THREE.Color(0xffffff),
+              roughness: 0.1,
+              metalness: 0.0,
+              clearcoat: 1.0,
+              clearcoatRoughness: 0.02
+            });
+            child.material.vertexColors = false; // Disables messy raw baked color profiles
 
-      model.traverse((child) => {
-        if (child.isMesh) {
-          // Re-write materials to avoid broken vertex colors causing gray blobs
-          child.material = new THREE.MeshPhysicalMaterial({
-            color: child.material.color || new THREE.Color(0xffffff),
-            roughness: 0.1,
-            metalness: 0.0,
-            clearcoat: 1.0,
-            clearcoatRoughness: 0.02
-          });
-          child.material.vertexColors = false;
+            const partialBox = new THREE.Box3().setFromObject(child);
+            const partialCenter = new THREE.Vector3();
+            partialBox.getCenter(partialCenter);
+            
+            // Re-center mesh coordinate alignment
+            child.position.sub(physicalCenter);
 
-          // Align internal geometry structure relative to its pivot group
-          const childBox = new THREE.Box3().setFromObject(child);
-          const childCenter = new THREE.Vector3();
-          childBox.getCenter(childCenter);
-          
-          child.position.sub(center);
-
-          // Separate upper and lower arches via geometric midline split
-          if (childCenter.y > center.y) {
-            upperJaw.add(child);
-          } else {
-            lowerJaw.add(child);
+            if (partialCenter.y > physicalCenter.y) {
+              upperJawGroup.add(child);
+            } else {
+              lowerJawGroup.add(child);
+            }
           }
-        }
-      });
+        });
 
-      isModelReady = true;
-      startBtn.disabled = false;
-      startBtn.innerText = "Open AR Mirror";
+        upperJawGroup.visible = false;
+        lowerJawGroup.visible = false;
+        isModelLoaded = true;
+        
+        verifySystemReady();
+      } catch (err) {
+        writeLog(`Processing Error: Failed analyzing inner structural geometry meshes: ${err.message}`, 'error');
+      }
+    }, function (xhr) {
+      // Progress loop
+    }, function (error) {
+      writeLog(`CRITICAL FILE ERROR: The browser cannot find or read 'teeth.glb'. Check file path or run via Local Server. Details: ${error.message}`, 'error');
     });
 
-    // --- 2. FACE TRACKING INITIALIZATION ---
+    // --- MEDIAPIPE FACE INTERPRETATION AI ---
     let faceLandmarker;
-    let lastVideoTime = -1;
-    
-    // The exact 20 points defining the inner line of the lips
-    const INNER_LIP_PATH = [78, 191, 80, 81, 82, 13, 312, 311, 310, 415, 308, 324, 318, 402, 317, 14, 87, 178, 88, 95];
+    let lastProcessedVideoTime = -1;
+    let coreEngineActive = false;
 
-    async function initAI() {
-      const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm");
-      faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
-        baseOptions: { modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task", delegate: "GPU" },
-        runningMode: "VIDEO",
-        numFaces: 1
-      });
+    // Precise 20-point tracking boundary map matching the lip margins
+    const LIP_OCCLUSION_PATH = [78, 191, 80, 81, 82, 13, 312, 311, 310, 415, 308, 324, 318, 402, 317, 14, 87, 178, 88, 95];
+
+    async function initializeAIModule() {
+      try {
+        writeLog("Downloading MediaPipe Face WebAssembly tracking configurations...");
+        const visionAssembly = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm");
+        faceLandmarker = await FaceLandmarker.createFromOptions(visionAssembly, {
+          baseOptions: { 
+            modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task", 
+            delegate: "GPU" 
+          },
+          runningMode: "VIDEO",
+          numFaces: 1
+        });
+        writeLog("MediaPipe Neural Tracking Engine fully operational.", 'success');
+        verifySystemReady();
+      } catch (err) {
+        writeLog(`CRITICAL AI ERROR: Failed initializing tracking networks: ${err.message}`, 'error');
+      }
     }
 
-    startBtn.addEventListener("click", async () => {
-      loadingOverlay.style.display = "none";
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480, facingMode: "user" } });
-      video.srcObject = stream;
-      video.addEventListener("loadeddata", () => {
-        window.requestAnimationFrame(renderLoop);
-      });
+    function verifySystemReady() {
+      if (isModelLoaded && faceLandmarker) {
+        actionButton.disabled = false;
+        actionButton.innerText = "Initialize Live Dual AR Sync";
+        writeLog("All modules online. System ready for runtime mirror mapping.", 'success');
+      }
+    }
+
+    actionButton.addEventListener("click", async () => {
+      actionButton.style.display = "none";
+      writeLog("Requesting local hardware camera processing access permission...");
+      
+      try {
+        const streamingMedia = await navigator.mediaDevices.getUserMedia({ 
+          video: { width: 640, height: 480, facingMode: "user" } 
+        });
+        video.srcObject = streamingMedia;
+        video.addEventListener("loadeddata", () => {
+          writeLog("Hardware capture active. Core render loop tracking initialized.", 'success');
+          coreEngineActive = true;
+          window.requestAnimationFrame(renderCoreLoop);
+        });
+      } catch (err) {
+        writeLog(`CAMERA BLOCK: Hardware video extraction denied by browser permission setup: ${err.message}`, 'error');
+      }
     });
 
-    // --- 3. RENDERING & DEPTH PROJECTION LOOP ---
-    function renderLoop() {
-      if (video.currentTime !== lastVideoTime) {
-        lastVideoTime = video.currentTime;
-        const results = faceLandmarker.detectForVideo(video, performance.now());
+    // --- MASTER RUNTIME PROCESS LOOP ---
+    function renderCoreLoop() {
+      if (video.currentTime !== lastProcessedVideoTime) {
+        lastProcessedVideoTime = video.currentTime;
+        
+        // Execute Face Mesh calculations
+        const trackingOutputs = faceLandmarker.detectForVideo(video, performance.now());
 
-        // Stream background frame
-        webcamCtx.drawImage(video, 0, 0, 640, 480);
+        // Stream clean frame to both canvases instantly
+        leftCtx.drawImage(video, 0, 0, 480, 360);
+        rightCtx.drawImage(video, 0, 0, 480, 360);
 
-        if (results.faceLandmarks && results.faceLandmarks.length > 0) {
-          const landmarks = results.faceLandmarks[0];
+        if (coreEngineActive && trackingOutputs.faceLandmarks && trackingOutputs.faceLandmarks.length > 0) {
+          const coordinates = trackingOutputs.faceLandmarks[0];
 
-          const leftCorner = landmarks[78];
-          const rightCorner = landmarks[308];
-          const topLipInner = landmarks[13];
-          const bottomLipInner = landmarks[14];
+          const anchorLeft = coordinates[78];
+          const anchorRight = coordinates[308];
+          const anchorUpperLip = coordinates[13];
+          const anchorLowerLip = coordinates[14];
 
-          // Calculate real pixel values
-          const mouthWidthPx = Math.abs(rightCorner.x - leftCorner.x) * 640;
-          const mouthHeightPx = Math.abs(bottomLipInner.y - topLipInner.y) * 480;
+          // Linear conversions translating coordinate bounds to processing frame sizing
+          const frameMouthWidth = Math.abs(anchorRight.x - anchorLeft.x) * 480;
+          const frameMouthHeight = Math.abs(anchorLowerLip.y - anchorUpperLip.y) * 360;
 
-          if (mouthHeightPx > 3) {
-            upperJaw.visible = true;
-            lowerJaw.visible = true;
+          // --- LEFT CONTAINER DISPLAY (MATHEMATICAL MESH) ---
+          leftCtx.fillStyle = "#ff4444";
+          LIP_OCCLUSION_PATH.forEach(index => {
+            const node = coordinates[index];
+            leftCtx.beginPath();
+            leftCtx.arc(node.x * 480, node.y * 360, 2, 0, 2 * Math.PI);
+            leftCtx.fill();
+          });
 
-            // Compute depth calculation (Z axis) based on facial dimensions
-            // Prevents scaling distortions when moving closer/further from screen
-            const distanceFactor = 35 / (mouthWidthPx / 640); 
+          // Draw center processing check crosshair
+          leftCtx.strokeStyle = "rgba(255,255,255,0.2)";
+          leftCtx.beginPath(); leftCtx.moveTo(240,0); leftCtx.lineTo(240,360); leftCtx.moveTo(0,180); leftCtx.lineTo(480,180); leftCtx.stroke();
+
+
+          // --- RIGHT CONTAINER DISPLAY (TRY-ON OVERLAY) ---
+          if (frameMouthHeight > 3) {
+            upperJawGroup.visible = true;
+            lowerJawGroup.visible = true;
+
+            // Perspective Matrix Coordinate Interpolation
+            const spaceDepthDistance = 33 / (frameMouthWidth / 480);
             
-            // Map 2D Screen points directly to 3D Viewport Space coordinates
-            const transformX = ((leftCorner.x + rightCorner.x) / 2 - 0.5) * (640 / 480) * distanceFactor;
-            const transformUpperY = (0.5 - topLipInner.y) * distanceFactor;
-            const transformLowerY = (0.5 - bottomLipInner.y) * distanceFactor;
+            const spaceViewportX = ((anchorLeft.x + anchorRight.x) / 2 - 0.5) * (480 / 360) * spaceDepthDistance;
+            const spaceViewportUpperY = (0.5 - anchorUpperLip.y) * spaceDepthDistance;
+            const spaceViewportLowerY = (0.5 - anchorLowerLip.y) * spaceDepthDistance;
 
-            // Apply consistent global uniform sizing
-            const scaleTarget = (mouthWidthPx / baseModelWidth) * 0.095;
-            dentalKit.scale.set(scaleTarget, scaleTarget, scaleTarget);
+            // Sizing Uniform Application
+            const processingScale = (frameMouthWidth / structuralModelWidth) * 0.095 * adjustmentScale;
+            masterAssetContainer.scale.set(processingScale, processingScale, processingScale);
 
-            // Position jaws to follow their respective anchor points independently
-            upperJaw.position.set(transformX, transformUpperY, -distanceFactor);
-            lowerJaw.position.set(transformX, transformLowerY, -distanceFactor);
+            // Positioning translations factoring in slider modification offsets
+            upperJawGroup.position.set(spaceViewportX, spaceViewportUpperY + (adjustmentY * 0.1), -spaceDepthDistance + adjustmentZ);
+            lowerJawGroup.position.set(spaceViewportX, spaceViewportLowerY + (adjustmentY * 0.1), -spaceDepthDistance + adjustmentZ);
 
-            // Compute head rotation angles
-            const yaw = Math.atan2(rightCorner.z - leftCorner.z, rightCorner.x - leftCorner.x);
-            const roll = Math.atan2(rightCorner.y - leftCorner.y, rightCorner.x - leftCorner.x);
+            // Angle alignment tracking rotations
+            const headYawAngle = Math.atan2(anchorRight.z - anchorLeft.z, anchorRight.x - anchorLeft.x);
+            const headRollAngle = Math.atan2(anchorRight.y - anchorLeft.y, anchorRight.x - anchorLeft.x);
             
-            upperJaw.rotation.set(0, yaw, -roll);
-            lowerJaw.rotation.set(0, yaw, -roll);
+            upperJawGroup.rotation.set(0, headYawAngle, -headRollAngle);
+            
+            // TMJ Physics Hinge Application
+            const dynamicHingeRotation = Math.max(0, (frameMouthHeight * 0.015) * adjustmentHinge);
+            lowerJawGroup.rotation.set(-dynamicHingeRotation, headYawAngle, -headRollAngle);
 
+            // Execute processing background compilation
             renderer.render(scene, camera);
 
-            // --- SHARP BOUNDARY OCCLUSION MASK ---
-            // Only renders teeth showing through the open area of the lips
-            webcamCtx.save();
-            webcamCtx.beginPath();
-            INNER_LIP_PATH.forEach((idx, i) => {
-              const pt = landmarks[idx];
-              if (i === 0) webcamCtx.moveTo(pt.x * 640, pt.y * 480);
-              else webcamCtx.lineTo(pt.x * 640, pt.y * 480);
+            // CLIP OPEN HOLE SEAM MASK
+            rightCtx.save();
+            rightCtx.beginPath();
+            LIP_OCCLUSION_PATH.forEach((index, loopIdx) => {
+              const node = coordinates[index];
+              if (loopIdx === 0) rightCtx.moveTo(node.x * 480, node.y * 360);
+              else rightCtx.lineTo(node.x * 480, node.y * 360);
             });
-            webcamCtx.closePath();
-            webcamCtx.clip();
+            rightCtx.closePath();
+            rightCtx.clip();
 
-            // Overlay calibrated 3D layers inside the clipped lip opening
-            webcamCtx.drawImage(threeCanvas, 0, 0, 640, 480);
-            webcamCtx.restore();
+            // Stitch composite 3D layer mapping inside lip structure boundaries
+            rightCtx.drawImage(threeHiddenCanvas, 0, 0, 480, 360);
+            rightCtx.restore();
           } else {
-            upperJaw.visible = false;
-            lowerJaw.visible = false;
+            upperJawGroup.visible = false;
+            lowerJawGroup.visible = false;
           }
         }
       }
-      window.requestAnimationFrame(renderLoop);
+      window.requestAnimationFrame(renderCoreLoop);
     }
 
-    initAI();
+    // Begin Evaluation
+    initializeAIModule();
   </script>
 </body>
 </html>
