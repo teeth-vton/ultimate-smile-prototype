@@ -1,8 +1,9 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>3D Teeth VTO - Verification</title>
+  <title>Robust 3D Dental VTO Engine</title>
   <script type="importmap">
     {
       "imports": {
@@ -13,13 +14,20 @@
     }
   </script>
   <style>
-    body { margin: 0; background: #000; }
+    body { margin: 0; background: #000; font-family: sans-serif; }
     #container { width: 100vw; height: 100vh; position: relative; }
-    #startBtn { position: absolute; z-index: 10; top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 20px 40px; font-size: 20px; cursor: pointer; }
+    #startBtn { 
+      position: absolute; z-index: 10; top: 50%; left: 50%; 
+      transform: translate(-50%, -50%); padding: 20px 40px; 
+      font-size: 20px; cursor: pointer; border-radius: 10px; 
+      border: none; background: #00d2ff; font-weight: bold;
+    }
+    #status { position: absolute; top: 20px; left: 20px; color: #0f0; font-family: monospace; z-index: 5; }
   </style>
 </head>
 <body>
-  <button id="startBtn">START VTO</button>
+  <div id="status">Engine: STANDBY</div>
+  <button id="startBtn">INITIALIZE AR ENGINE</button>
   <div id="container"></div>
 
   <script type="module">
@@ -27,32 +35,66 @@
     import { MindARThree } from 'mindar-face-three';
     import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-    const mindarThree = new MindARThree({ container: document.querySelector("#container") });
+    const status = document.getElementById("status");
+    const startBtn = document.getElementById("startBtn");
+    const container = document.querySelector("#container");
+
+    const mindarThree = new MindARThree({ container: container });
     const { renderer, scene, camera } = mindarThree;
 
-    // Lights - MUST HAVE for 3D visibility
-    const ambientLight = new THREE.AmbientLight(0xffffff, 1.5);
+    // Lighting Setup
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
     scene.add(ambientLight);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
+    directionalLight.position.set(0, 1, 1);
+    scene.add(directionalLight);
 
-    // Anchor to the mouth (Index 10)
+    // Mouth Anchor (Index 10)
     const anchor = mindarThree.addAnchor(10); 
-    
+    let teethModel = null;
+
+    // Load Model
     const loader = new GLTFLoader();
+    status.innerText = "Engine: Loading 3D Model...";
     loader.load('./teeth.glb', (gltf) => {
-      const teeth = gltf.scene;
-      // Make it LARGE to ensure we can see it
-      teeth.scale.set(5, 5, 5); 
-      // Offset from anchor
-      teeth.position.set(0, -0.2, 0); 
-      anchor.group.add(teeth);
+      teethModel = gltf.scene;
+      teethModel.scale.set(0.5, 0.5, 0.5); 
+      teethModel.position.set(0, -0.6, 0.05); // Calibration: X, Y, Z
+      teethModel.visible = false; 
+      anchor.group.add(teethModel);
+      status.innerText = "Engine: 3D Model Loaded. Ready.";
+    }, undefined, (err) => {
+      status.innerText = "Engine: Error loading teeth.glb";
+      console.error(err);
     });
 
-    document.getElementById("startBtn").onclick = async () => {
-      await mindarThree.start();
-      document.getElementById("startBtn").style.display = 'none';
-      renderer.setAnimationLoop(() => {
-        renderer.render(scene, camera);
-      });
+    // Start Sequence
+    startBtn.onclick = async () => {
+      try {
+        status.innerText = "Engine: Requesting Camera...";
+        await mindarThree.start();
+        startBtn.style.display = 'none';
+        status.innerText = "Engine: ONLINE";
+
+        renderer.setAnimationLoop(() => {
+          // Logic for mouth open visibility
+          if(teethModel) {
+            // Check if tracking is active
+            const isDetected = anchor.group.visible; 
+            if (isDetected) {
+              // Simple open mouth heuristic for detection if blendshapes aren't available
+              // Just keep visible if face is tracked
+              teethModel.visible = true;
+            } else {
+              teethModel.visible = false;
+            }
+          }
+          renderer.render(scene, camera);
+        });
+      } catch (e) {
+        status.innerText = "Engine: Fatal Error";
+        console.error(e);
+      }
     };
   </script>
 </body>
