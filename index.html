@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Robust 3D Dental VTO Engine</title>
+  <title>Professional 3D Teeth VTO Engine</title>
   <script type="importmap">
     {
       "imports": {
@@ -14,20 +14,18 @@
     }
   </script>
   <style>
-    body { margin: 0; background: #000; font-family: sans-serif; }
+    body { margin: 0; background: #000; overflow: hidden; font-family: sans-serif; }
     #container { width: 100vw; height: 100vh; position: relative; }
-    #startBtn { 
-      position: absolute; z-index: 10; top: 50%; left: 50%; 
-      transform: translate(-50%, -50%); padding: 20px 40px; 
-      font-size: 20px; cursor: pointer; border-radius: 10px; 
-      border: none; background: #00d2ff; font-weight: bold;
-    }
-    #status { position: absolute; top: 20px; left: 20px; color: #0f0; font-family: monospace; z-index: 5; }
+    #ui-layer { position: absolute; top: 20px; left: 20px; z-index: 20; color: white; background: rgba(0,0,0,0.6); padding: 15px; border-radius: 10px; }
+    #startBtn { padding: 15px 30px; font-size: 18px; cursor: pointer; background: #00d2ff; border: none; border-radius: 5px; font-weight: bold; }
   </style>
 </head>
 <body>
-  <div id="status">Engine: STANDBY</div>
-  <button id="startBtn">INITIALIZE AR ENGINE</button>
+
+  <div id="ui-layer">
+    <h3>System Status: <span id="status">Waiting...</span></h3>
+    <button id="startBtn">INITIALIZE CAMERA</button>
+  </div>
   <div id="container"></div>
 
   <script type="module">
@@ -35,66 +33,57 @@
     import { MindARThree } from 'mindar-face-three';
     import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-    const status = document.getElementById("status");
-    const startBtn = document.getElementById("startBtn");
+    // 1. ENGINE SETUP
     const container = document.querySelector("#container");
-
+    const statusText = document.querySelector("#status");
     const mindarThree = new MindARThree({ container: container });
     const { renderer, scene, camera } = mindarThree;
 
-    // Lighting Setup
+    // 2. ADD LIGHTING
     const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
     scene.add(ambientLight);
     const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
     directionalLight.position.set(0, 1, 1);
     scene.add(directionalLight);
 
-    // Mouth Anchor (Index 10)
+    // 3. MOUTH ANCHOR
     const anchor = mindarThree.addAnchor(10); 
     let teethModel = null;
 
-    // Load Model
+    // 4. LOAD THE MODEL
     const loader = new GLTFLoader();
-    status.innerText = "Engine: Loading 3D Model...";
     loader.load('./teeth.glb', (gltf) => {
       teethModel = gltf.scene;
-      teethModel.scale.set(0.5, 0.5, 0.5); 
-      teethModel.position.set(0, -0.6, 0.05); // Calibration: X, Y, Z
+      // Adjust scale and position here until it fits
+      teethModel.scale.set(0.6, 0.6, 0.6); 
+      // If it's too far forward, decrease Z (last number)
+      // If it's too high, decrease Y (second number)
+      teethModel.position.set(0, -0.4, 0.1); 
       teethModel.visible = false; 
       anchor.group.add(teethModel);
-      status.innerText = "Engine: 3D Model Loaded. Ready.";
+      statusText.innerText = "Model Loaded.";
     }, undefined, (err) => {
-      status.innerText = "Engine: Error loading teeth.glb";
+      statusText.innerText = "Error loading GLB!";
       console.error(err);
     });
 
-    // Start Sequence
-    startBtn.onclick = async () => {
-      try {
-        status.innerText = "Engine: Requesting Camera...";
-        await mindarThree.start();
-        startBtn.style.display = 'none';
-        status.innerText = "Engine: ONLINE";
+    // 5. ENGINE START
+    document.getElementById("startBtn").onclick = async () => {
+      statusText.innerText = "Starting Camera...";
+      await mindarThree.start();
+      document.getElementById("startBtn").style.display = 'none';
+      statusText.innerText = "Tracking Active.";
 
-        renderer.setAnimationLoop(() => {
-          // Logic for mouth open visibility
-          if(teethModel) {
-            // Check if tracking is active
-            const isDetected = anchor.group.visible; 
-            if (isDetected) {
-              // Simple open mouth heuristic for detection if blendshapes aren't available
-              // Just keep visible if face is tracked
-              teethModel.visible = true;
-            } else {
-              teethModel.visible = false;
-            }
-          }
-          renderer.render(scene, camera);
-        });
-      } catch (e) {
-        status.innerText = "Engine: Fatal Error";
-        console.error(e);
-      }
+      renderer.setAnimationLoop(() => {
+        // MOUTH DETECTION LOGIC
+        if (teethModel) {
+            // Check mouth opening (MindAR internal API)
+            const mouthOpening = mindarThree.faceMesh.getBlendshapes()?.jawOpen || 0;
+            // If mouth is open more than 10%, show teeth
+            teethModel.visible = mouthOpening > 0.1;
+        }
+        renderer.render(scene, camera);
+      });
     };
   </script>
 </body>
