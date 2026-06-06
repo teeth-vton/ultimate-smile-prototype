@@ -3,99 +3,60 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AR Teeth Whitening Try-On</title>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
+  <title>Banuba AR Teeth Whitening</title>
   <style>
-    body { font-family: sans-serif; background: #1a1a1a; color: white; display: flex; flex-direction: column; align-items: center; margin: 0; padding: 20px; }
-    #video-container { position: relative; width: 100%; max-width: 640px; border-radius: 10px; overflow: hidden; background: #000; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-    /* Flip the video like a mirror */
-    video, canvas { width: 100%; height: auto; display: block; transform: scaleX(-1); }
-    canvas { position: absolute; top: 0; left: 0; pointer-events: none; }
-    .controls { margin-top: 20px; background: #333; padding: 20px; border-radius: 8px; width: 100%; max-width: 600px; }
-    input[type=range] { width: 100%; margin-top: 10px; cursor: pointer; }
-    .status { margin-bottom: 15px; font-weight: bold; color: #4ade80; text-align: center;}
+    body { margin: 0; background: #111; display: flex; justify-content: center; align-items: center; height: 100vh; color: white; font-family: sans-serif; flex-direction: column; }
+    #webar-player { width: 100%; max-width: 640px; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.8); background: #000; display: flex; justify-content: center; align-items: center; aspect-ratio: 4/3;}
+    #status { margin-bottom: 20px; font-weight: bold; color: #4ade80; }
   </style>
 </head>
 <body>
-  <h2>🦷 Live AR Teeth Whitening</h2>
-  
-  <div class="controls">
-    <div class="status" id="status">Loading AR Model... Please allow camera access.</div>
-    <label>Whitening Filter Intensity: <span id="intensity-val">50%</span></label>
-    <input type="range" id="intensity" min="0" max="1" step="0.05" value="0.5">
-  </div>
-  
-  <div id="video-container">
-    <video id="webcam" autoplay playsinline></video>
-    <canvas id="output_canvas"></canvas>
-  </div>
 
-  <script>
-    const video = document.getElementById('webcam');
-    const canvas = document.getElementById('output_canvas');
-    const ctx = canvas.getContext('2d');
-    const slider = document.getElementById('intensity');
-    const statusText = document.getElementById('status');
-    const intensityVal = document.getElementById('intensity-val');
+  <div id="status">Loading Banuba AI Engine...</div>
+  <div id="webar-player"></div>
 
-    // Update slider text
-    slider.addEventListener('input', (e) => {
-      intensityVal.innerText = Math.round(e.target.value * 100) + '%';
-    });
+  <script type="module">
+    // Pull the Banuba Engine directly from their high-speed CDN so GitHub stays clean
+    import { Webcam, Player, Module, Effect, Dom } from 'https://cdn.jsdelivr.net/npm/@banuba/webar/dist/BanubaSDK.browser.esm.min.js';
 
-    // These specific numbers are the dots around the inner lips in MediaPipe's Face Mesh
-    const INNER_LIPS = [78, 191, 80, 81, 82, 13, 312, 311, 310, 415, 308, 324, 318, 402, 317, 14, 87, 178, 88, 95];
-
-    function onResults(results) {
-      // Set canvas size to match video
-      if (!canvas.width) {
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        statusText.innerText = "Face Detected! Try smiling.";
-      }
-      
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
-        const landmarks = results.multiFaceLandmarks[0];
-        
-        // Draw a polygon mask over the open mouth
-        ctx.beginPath();
-        INNER_LIPS.forEach((index, i) => {
-          const x = landmarks[index].x * canvas.width;
-          const y = landmarks[index].y * canvas.height;
-          if (i === 0) ctx.moveTo(x, y);
-          else ctx.lineTo(x, y);
+    async function initAR() {
+      try {
+        // 1. Initialize the Engine with your token
+        const player = await Player.create({
+          clientToken: 'Qk5CIAnZ5QCVvwyhPDHnIWjc3+QSQYDbFloei6q+6wZPVQacNxvodLMeMN1Z6u+eMjsVO2RnoQEQvvqcTpFxGyGvZ2gM8fOpciy133xGGkHjm83uMYgANT5XlDOEkQ2jO1NtbO31RLxAPv1HZawc+E/V6l/rRy/21N11YNrAR9jxFqQdJFF3AnsxPdkehXSppDgTV5QZVxz8ovO3d3xD0bNwv7zw31tqAMShrEPEFGM4wIED7rs98sL7+rXv6HNkiQOR0zaiLMHCYMY7y5QoApY8bZqSwJPfMoI/4nRPh92V9j2w8t+5L4sASql9IeicNUN1GgSRo4GoveD4HzdSytBsV+PiV4Mh+7AZV54rU4kVh0slIXBOK72e7YR+l3hPNJiSwDMJDc/9i3KnUwl+aDhxGP5JRlov6TzTiJ7FmyPxMveiZO94UvJtq3xktx3s1sGTRPXF1lGXaWAEBN5oAb2Nh3nN7UbV1ooC3y8+Qnns/agZnJ0DdU25LPNvZ/cvllQuuSu9IUv9gDy5N5QzUTmQ+JcUxM1BNWQmlDSwQtSwpXjQvJdme1OcuNV7N4PU6yCLlh+/kQmSOVeKxiQPdYrUqsKht2NNnrnNv09zwfky6fqeHJSVsbD5lJ5jtdpBVc+dJZazQk7f7IiUg4rCSQ==',
+          locateFile: {
+            'BanubaSDK.wasm': 'https://cdn.jsdelivr.net/npm/@banuba/webar/dist/BanubaSDK.wasm',
+            'BanubaSDK.simd.wasm': 'https://cdn.jsdelivr.net/npm/@banuba/webar/dist/BanubaSDK.simd.wasm',
+            'BanubaSDK.data': 'https://cdn.jsdelivr.net/npm/@banuba/webar/dist/BanubaSDK.data',
+          }
         });
-        ctx.closePath();
 
-        // Apply a white color with an 'overlay' blend mode to brighten the teeth
-        ctx.fillStyle = `rgba(255, 255, 255, ${slider.value})`;
-        ctx.globalCompositeOperation = 'overlay'; 
-        ctx.fill();
-        
-        // Reset blend mode so it doesn't mess up future frames
-        ctx.globalCompositeOperation = 'source-over';
+        // 2. Load the AI Face Tracking neural network
+        document.getElementById('status').innerText = "Loading Face Tracking...";
+        await player.addModule(new Module('https://cdn.jsdelivr.net/npm/@banuba/webar/dist/modules/face_tracker.zip'));
+
+        // 3. Mount the Webcam into the webpage
+        document.getElementById('status').innerText = "Starting Camera...";
+        await player.use(new Webcam());
+        Dom.render(player, '#webar-player');
+
+        // 4. HERE IS THE LINE! It matches your file perfectly now:
+        document.getElementById('status').innerText = "Applying Teeth AR...";
+        const effect = new Effect('./TeethWitening_Toggle.zip'); 
+        await player.applyEffect(effect);
+
+        // Success!
+        document.getElementById('status').innerText = "🦷 Live AR Active!";
+
+      } catch (error) {
+        console.error("AR Error:", error);
+        document.getElementById('status').innerText = "Error loading AR. Make sure your .zip file is uploaded exactly as named!";
+        document.getElementById('status').style.color = "red";
       }
     }
 
-    // Initialize Google's Face Mesh
-    const faceMesh = new FaceMesh({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`});
-    faceMesh.setOptions({ 
-      maxNumFaces: 1, 
-      refineLandmarks: true, 
-      minDetectionConfidence: 0.5, 
-      minTrackingConfidence: 0.5 
-    });
-    faceMesh.onResults(onResults);
-
-    // Start the Webcam
-    const camera = new Camera(video, {
-      onFrame: async () => { await faceMesh.send({image: video}); },
-      width: 640, height: 480
-    });
-    camera.start();
+    initAR();
   </script>
+
 </body>
 </html>
