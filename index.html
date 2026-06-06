@@ -2,6 +2,7 @@
 <html>
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart 3D Teeth VTO</title>
   <script type="importmap">
     {
       "imports": {
@@ -26,38 +27,42 @@
     import { MindARThree } from 'mindar-face-three';
     import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-    const container = document.querySelector("#container");
-    const mindarThree = new MindARThree({ container: container });
+    const mindarThree = new MindARThree({ container: document.querySelector("#container") });
     const { renderer, scene, camera } = mindarThree;
 
-    // 1. Add Lighting (Fixes the black silhouette)
+    // Lights
     const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
     scene.add(light);
-    const dirLight = new THREE.DirectionalLight(0xffffff, 1);
-    dirLight.position.set(0, 1, 1);
-    scene.add(dirLight);
 
-    // 2. Add Anchor (10 is mouth area)
     const anchor = mindarThree.addAnchor(10); 
+    let teethModel;
 
-    // 3. Load Model
     const loader = new GLTFLoader();
- // Ensure the model is added to the group, NOT the scene
-loader.load('./teeth.glb', (gltf) => {
-  const teeth = gltf.scene;
-  teeth.scale.set(0.5, 0.5, 0.5); 
-  
-  // Try these refined coordinates
-  teeth.position.set(0, -0.6, 0.05); 
-  
-  // THIS IS THE KEY: Add it to the anchor group, NOT the scene
-  anchor.group.add(teeth); 
-});
-    // 4. Start Engine
+    loader.load('./teeth.glb', (gltf) => {
+      teethModel = gltf.scene;
+      teethModel.scale.set(0.5, 0.5, 0.5); 
+      teethModel.position.set(0, -0.6, 0.05); 
+      teethModel.visible = false; // Start hidden
+      anchor.group.add(teethModel);
+    });
+
+    // Start Logic
     document.getElementById("startBtn").onclick = async () => {
-      await mindarThree.start(); // This triggers the browser camera prompt
+      await mindarThree.start();
       document.getElementById("startBtn").style.display = 'none';
+
       renderer.setAnimationLoop(() => {
+        // GET THE MOUTH OPEN STATE
+        // MindAR detects facial expressions via the anchor's underlying tracking data
+        const face = mindarThree.faceMesh;
+        if(teethModel) {
+            // Check if mouth is open (Logic based on blendshape estimation)
+            // If the model is detected, we check the mouth opening state
+            // 0.1 is the threshold: if mouth opening > 10%, show teeth
+            const isMouthOpen = face.getBlendshapes ? face.getBlendshapes().jawOpen > 0.1 : true; 
+            teethModel.visible = isMouthOpen;
+        }
+        
         renderer.render(scene, camera);
       });
     };
