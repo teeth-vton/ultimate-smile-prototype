@@ -12,26 +12,21 @@
     
     .controls-panel { background: #fff; padding: 20px 30px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); width: 100%; max-width: 600px; margin-bottom: 20px; display: flex; flex-direction: column; align-items: center; border: 1px solid #e2e8f0; }
     
-    /* Sleek Action Button */
     #actionBtn { padding: 14px 40px; font-size: 16px; font-weight: bold; background: #2563eb; color: #fff; border: none; border-radius: 8px; cursor: pointer; transition: 0.2s; width: 100%; margin-bottom: 15px;}
     #actionBtn:hover { background: #1d4ed8; }
     #actionBtn:disabled { background: #cbd5e1; cursor: not-allowed; color: #64748b; }
 
-    /* The New Whitening Slider */
     .slider-container { width: 100%; display: none; flex-direction: column; }
     .slider-container label { font-weight: 600; margin-bottom: 8px; color: #475569; display: flex; justify-content: space-between;}
     input[type=range] { width: 100%; cursor: pointer; accent-color: #2563eb; }
 
     .ar-workspace { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center;}
     
-    /* Modern Screen Panels */
     .screen-panel { position: relative; width: 480px; height: 360px; border-radius: 16px; overflow: hidden; background: #e2e8f0; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
     .view-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: scaleX(-1); }
     .panel-label { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.6); color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; z-index: 10;}
     
     video { display: none; }
-    
-    /* Hidden Debug Console (Bosses don't need to see code logs!) */
     .debug-console { display: none; }
   </style>
 </head>
@@ -55,11 +50,11 @@
 
   <div class="ar-workspace">
     <div class="screen-panel">
-      <div class="panel-label">Original</div>
+      <div class="panel-label">Live Detection</div>
       <canvas id="leftCanvas" class="view-canvas" width="480" height="360"></canvas>
     </div>
     <div class="screen-panel">
-      <div class="panel-label">Live Result</div>
+      <div class="panel-label">AR Result</div>
       <canvas id="rightCanvas" class="view-canvas" width="480" height="360"></canvas>
     </div>
   </div>
@@ -76,13 +71,11 @@
     const leftCtx = document.getElementById("leftCanvas").getContext("2d");
     const rightCtx = document.getElementById("rightCanvas").getContext("2d");
     
-    // UI Elements
     const btn = document.getElementById("actionBtn");
     const sliderUI = document.getElementById("sliderUI");
     const slider = document.getElementById("whiteSlider");
     const intensityVal = document.getElementById("intensityVal");
 
-    // Update slider text live
     slider.addEventListener('input', (e) => {
       intensityVal.innerText = Math.round(e.target.value * 100) + '%';
     });
@@ -114,7 +107,6 @@
                 numFaces: 1
             });
             
-            // UI Switch: Hide button, show slider
             btn.style.display = "none";
             sliderUI.style.display = "flex";
             
@@ -133,7 +125,6 @@
             
             const res = landmarker.detectForVideo(video, performance.now());
             
-            // Draw clean video to both
             leftCtx.drawImage(video, 0, 0, 480, 360);
             rightCtx.drawImage(video, 0, 0, 480, 360);
             
@@ -141,6 +132,27 @@
                 const lm = res.faceLandmarks[0];
                 const p = [78, 191, 80, 81, 82, 13, 312, 311, 310, 415, 308, 324, 318, 402, 317, 14, 87, 178, 88, 95];
                 
+                // --- NEW: Draw Tracking Data on Left Canvas ---
+                leftCtx.save();
+                leftCtx.strokeStyle = "#00ff00"; // Neon green lines
+                leftCtx.fillStyle = "#00ff00";
+                leftCtx.lineWidth = 1.5;
+                
+                leftCtx.beginPath();
+                p.forEach((idx, i) => {
+                    const x = lm[idx].x * 480;
+                    const y = lm[idx].y * 360;
+                    if (i === 0) leftCtx.moveTo(x, y);
+                    else leftCtx.lineTo(x, y);
+                    
+                    // Draw a little dot at each point
+                    leftCtx.fillRect(x - 1.5, y - 1.5, 3, 3); 
+                });
+                leftCtx.closePath();
+                leftCtx.stroke();
+                leftCtx.restore();
+                // ----------------------------------------------
+
                 const mouthOpen = (lm[14].y - lm[13].y) * 480;
                 
                 if(mouthOpen > 5) {
@@ -155,11 +167,7 @@
                     rightCtx.closePath();
                     
                     rightCtx.clip();
-                    
-                    // CUSTOMIZATION: Add a slight blur to the edges so it looks natural
                     rightCtx.filter = 'blur(3px)';
-                    
-                    // CUSTOMIZATION: Use the slider value for the alpha transparency!
                     rightCtx.globalCompositeOperation = "overlay";
                     rightCtx.fillStyle = `rgba(255, 255, 255, ${slider.value})`; 
                     rightCtx.fillRect(0, 0, 480, 360);
