@@ -86,10 +86,8 @@
   <button id="start-btn">Initialize Camera & AR Engine</button>
   
   <div id="webar-player">
-    <!-- The Banuba AR canvas will inject itself right here -->
-  </div>
+    </div>
 
-  <!-- This is your on-screen terminal. It replaces PowerShell. -->
   <div id="debug-console">
     <div class="log-line log-info">[System] Debug console initialized. Waiting for user input...</div>
   </div>
@@ -174,6 +172,10 @@
         const effect = new Effect('./TeethWitening_Toggle.zip'); 
         await player.applyEffect(effect);
         logToScreen("Teeth AR Effect successfully applied!", "success");
+
+        // STEP 6: START THE LIVE VIDEO LOOP (This fixes the frozen screen!)
+        logToScreen("Unpausing engine and starting live video loop...", "info");
+        player.play();
 
         // SUCCESS STATE
         startBtn.style.display = 'none'; // Hide button on perfect success
