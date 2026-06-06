@@ -1,183 +1,58 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>Ultimate Smile - VTO Experience</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3D Teeth VTO Prototype</title>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+        "mindar-face-three": "https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-face-three.prod.js"
+      }
+    }
+  </script>
   <style>
-    /* Clean, Professional Branding UI */
-    body { margin: 0; background: #fafafa; color: #333; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 20px; box-sizing: border-box; }
-    .header { text-align: center; margin-bottom: 20px; }
-    .header h1 { margin: 0; color: #1e293b; font-size: 2rem; letter-spacing: -0.5px;}
-    .header p { margin: 5px 0 0 0; color: #64748b; font-size: 1rem; }
-    
-    .controls-panel { background: #fff; padding: 20px 30px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); width: 100%; max-width: 600px; margin-bottom: 20px; display: flex; flex-direction: column; align-items: center; border: 1px solid #e2e8f0; }
-    
-    #actionBtn { padding: 14px 40px; font-size: 16px; font-weight: bold; background: #2563eb; color: #fff; border: none; border-radius: 8px; cursor: pointer; transition: 0.2s; width: 100%; margin-bottom: 15px;}
-    #actionBtn:hover { background: #1d4ed8; }
-    #actionBtn:disabled { background: #cbd5e1; cursor: not-allowed; color: #64748b; }
-
-    .slider-container { width: 100%; display: none; flex-direction: column; }
-    .slider-container label { font-weight: 600; margin-bottom: 8px; color: #475569; display: flex; justify-content: space-between;}
-    input[type=range] { width: 100%; cursor: pointer; accent-color: #2563eb; }
-
-    .ar-workspace { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center;}
-    
-    .screen-panel { position: relative; width: 480px; height: 360px; border-radius: 16px; overflow: hidden; background: #e2e8f0; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
-    .view-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: scaleX(-1); }
-    .panel-label { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.6); color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; z-index: 10;}
-    
-    video { display: none; }
-    .debug-console { display: none; }
+    body { margin: 0; }
+    #container { width: 100vw; height: 100vh; overflow: hidden; position: relative; }
+    #startBtn { position: absolute; z-index: 10; top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 20px 40px; font-size: 20px; cursor: pointer; }
   </style>
 </head>
 <body>
-
-  <div class="header">
-    <h1>Company Name AR</h1>
-    <p>Virtual Teeth Whitening Try-On</p>
-  </div>
-
-  <div class="controls-panel">
-    <button id="actionBtn">Start Virtual Try-On</button>
-    
-    <div class="slider-container" id="sliderUI">
-      <label>Whitening Intensity <span id="intensityVal">60%</span></label>
-      <input type="range" id="whiteSlider" min="0" max="1" step="0.05" value="0.6">
-    </div>
-  </div>
-
-  <div class="debug-console" id="logs"></div>
-
-  <div class="ar-workspace">
-    <div class="screen-panel">
-      <div class="panel-label">Live Detection</div>
-      <canvas id="leftCanvas" class="view-canvas" width="480" height="360"></canvas>
-    </div>
-    <div class="screen-panel">
-      <div class="panel-label">AR Result</div>
-      <canvas id="rightCanvas" class="view-canvas" width="480" height="360"></canvas>
-    </div>
-  </div>
-
-  <video id="webcam" autoplay playsinline></video>
+  <button id="startBtn">START 3D VTO</button>
+  <div id="container"></div>
 
   <script type="module">
-    import { FaceLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/vision_bundle.mjs";
+    import * as THREE from 'three';
+    import { MindARThree } from 'mindar-face-three';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-    const logDiv = document.getElementById("logs");
-    function log(m) { logDiv.innerHTML += `<div>> ${m}</div>`; console.log(m); }
+    const mindarThree = new MindARThree({
+      container: document.querySelector("#container"),
+    });
+    const {renderer, scene, camera} = mindarThree;
 
-    const video = document.getElementById("webcam");
-    const leftCtx = document.getElementById("leftCanvas").getContext("2d");
-    const rightCtx = document.getElementById("rightCanvas").getContext("2d");
-    
-    const btn = document.getElementById("actionBtn");
-    const sliderUI = document.getElementById("sliderUI");
-    const slider = document.getElementById("whiteSlider");
-    const intensityVal = document.getElementById("intensityVal");
+    // 1. Create the Mouth Anchor
+    // Anchor 10 is the mouth region
+    const anchor = mindarThree.addAnchor(10); 
 
-    slider.addEventListener('input', (e) => {
-      intensityVal.innerText = Math.round(e.target.value * 100) + '%';
+    // 2. Load the GLB model
+    const loader = new GLTFLoader();
+    loader.load('./teeth.glb', (gltf) => {
+      const teeth = gltf.scene;
+      teeth.scale.set(1, 1, 1); // Adjust if it's too big/small
+      teeth.position.set(0, 0, 0); // Center relative to mouth
+      anchor.group.add(teeth);
     });
 
-    let landmarker;
-    let lastVideoTime = -1; 
-
-    btn.onclick = async () => {
-        btn.disabled = true;
-        btn.innerText = "Connecting to Camera...";
-
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 }, audio: false });
-            video.srcObject = stream;
-            
-            await new Promise((resolve) => {
-                video.onloadedmetadata = () => { video.play(); resolve(); };
-            });
-
-            btn.innerText = "Loading AI Engine...";
-            const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm");
-            
-            landmarker = await FaceLandmarker.createFromOptions(vision, { 
-                baseOptions: { 
-                    modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task", 
-                    delegate: "GPU" 
-                }, 
-                runningMode: "VIDEO",
-                numFaces: 1
-            });
-            
-            btn.style.display = "none";
-            sliderUI.style.display = "flex";
-            
-            requestAnimationFrame(loop);
-
-        } catch (e) {
-            log("ERROR: " + e.message);
-            btn.disabled = false;
-            btn.innerText = "Error - Try Again";
-        }
+    // 3. Start Button Logic
+    document.getElementById("startBtn").onclick = async () => {
+      await mindarThree.start();
+      document.getElementById("startBtn").style.display = 'none';
+      renderer.setAnimationLoop(() => {
+        renderer.render(scene, camera);
+      });
     };
-
-    function loop() {
-        if (video.readyState >= 2 && video.currentTime !== lastVideoTime) {
-            lastVideoTime = video.currentTime;
-            
-            const res = landmarker.detectForVideo(video, performance.now());
-            
-            leftCtx.drawImage(video, 0, 0, 480, 360);
-            rightCtx.drawImage(video, 0, 0, 480, 360);
-            
-            if(res.faceLandmarks && res.faceLandmarks.length > 0) {
-                const lm = res.faceLandmarks[0];
-                const p = [78, 191, 80, 81, 82, 13, 312, 311, 310, 415, 308, 324, 318, 402, 317, 14, 87, 178, 88, 95];
-                
-                // --- NEW: Draw Tracking Data on Left Canvas ---
-                leftCtx.save();
-                leftCtx.strokeStyle = "#00ff00"; // Neon green lines
-                leftCtx.fillStyle = "#00ff00";
-                leftCtx.lineWidth = 1.5;
-                
-                leftCtx.beginPath();
-                p.forEach((idx, i) => {
-                    const x = lm[idx].x * 480;
-                    const y = lm[idx].y * 360;
-                    if (i === 0) leftCtx.moveTo(x, y);
-                    else leftCtx.lineTo(x, y);
-                    
-                    // Draw a little dot at each point
-                    leftCtx.fillRect(x - 1.5, y - 1.5, 3, 3); 
-                });
-                leftCtx.closePath();
-                leftCtx.stroke();
-                leftCtx.restore();
-                // ----------------------------------------------
-
-                const mouthOpen = (lm[14].y - lm[13].y) * 480;
-                
-                if(mouthOpen > 5) {
-                    rightCtx.save();
-                    rightCtx.beginPath();
-                    p.forEach((idx, i) => {
-                        const x = lm[idx].x * 480;
-                        const y = lm[idx].y * 360;
-                        if (i === 0) rightCtx.moveTo(x, y);
-                        else rightCtx.lineTo(x, y);
-                    });
-                    rightCtx.closePath();
-                    
-                    rightCtx.clip();
-                    rightCtx.filter = 'blur(3px)';
-                    rightCtx.globalCompositeOperation = "overlay";
-                    rightCtx.fillStyle = `rgba(255, 255, 255, ${slider.value})`; 
-                    rightCtx.fillRect(0, 0, 480, 360);
-                    
-                    rightCtx.restore();
-                }
-            }
-        }
-        requestAnimationFrame(loop);
-    }
   </script>
 </body>
 </html>
