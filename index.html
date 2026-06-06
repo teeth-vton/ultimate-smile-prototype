@@ -18,130 +18,53 @@
       box-sizing: border-box;
     }
     
-    .header-panel {
-      text-align: center;
-      margin-bottom: 15px;
-      width: 100%;
-      max-width: 1000px;
-    }
-    
-    .main-title {
-      font-size: 24px;
-      font-weight: 800;
-      letter-spacing: 2px;
-      margin: 0 0 5px 0;
-      color: #fff;
-    }
+    .header-panel { text-align: center; margin-bottom: 15px; width: 100%; max-width: 1000px; }
+    .main-title { font-size: 24px; font-weight: 800; letter-spacing: 2px; margin: 0 0 5px 0; color: #fff; }
 
-    /* SYSTEM CONSOLE LOGS DIRECTLY TO SCREEN */
     .debug-console {
-      width: 100%;
-      max-width: 980px;
-      background: #141419;
-      border-left: 4px solid #00d2ff;
-      padding: 12px;
-      border-radius: 6px;
-      font-family: monospace;
-      font-size: 12px;
-      margin-bottom: 20px;
-      box-sizing: border-box;
-      max-height: 100px;
-      overflow-y: auto;
+      width: 100%; max-width: 980px; background: #141419; border-left: 4px solid #00d2ff;
+      padding: 12px; border-radius: 6px; font-family: monospace; font-size: 12px; margin-bottom: 20px;
+      box-sizing: border-box; max-height: 100px; overflow-y: auto;
     }
     .log-entry { margin-bottom: 4px; color: #aaa; }
     .log-success { color: #00ff66; font-weight: bold; }
     .log-error { color: #ff3333; font-weight: bold; }
 
-    /* SPLIT SCREEN SIDE BY SIDE LAYOUT */
-    .workspace { 
-      display: flex; 
-      gap: 20px; 
-      justify-content: center; 
-      align-items: center; 
-      width: 100%;
-      max-width: 1000px;
-      margin-bottom: 20px;
-    }
+    .workspace { display: flex; gap: 20px; justify-content: center; align-items: center; width: 100%; max-width: 1000px; margin-bottom: 20px; }
     
     .display-card { 
-      position: relative; 
-      width: 480px; 
-      height: 360px; 
-      border-radius: 12px; 
-      overflow: hidden; 
-      background: #000; 
-      border: 2px solid #222;
-      box-shadow: 0 15px 35px rgba(0,0,0,0.7);
+      position: relative; width: 480px; height: 360px; border-radius: 12px; overflow: hidden; 
+      background: #000; border: 2px solid #222; box-shadow: 0 15px 35px rgba(0,0,0,0.7);
     }
     
     .card-label { 
-      position: absolute; 
-      top: 12px; 
-      left: 12px; 
-      background: rgba(0, 0, 0, 0.85); 
-      padding: 6px 12px; 
-      border-radius: 6px; 
-      font-size: 11px; 
-      font-weight: bold; 
-      z-index: 10;
-      letter-spacing: 0.5px;
+      position: absolute; top: 12px; left: 12px; background: rgba(0, 0, 0, 0.85); 
+      padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: bold; z-index: 10; letter-spacing: 0.5px;
     }
     
-    .view-canvas { 
-      position: absolute; 
-      top: 0; 
-      left: 0; 
-      width: 100%; 
-      height: 100%; 
-      transform: scaleX(-1); 
-    }
-    
+    .view-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: scaleX(-1); }
     #threeHiddenCanvas { display: none; }
     video { display: none; }
     
     #actionButton { 
-      padding: 14px 40px; 
-      font-size: 15px; 
-      font-weight: bold; 
-      background: #ffffff; 
-      color: #000000; 
-      border: none; 
-      border-radius: 30px; 
-      cursor: pointer; 
-      transition: transform 0.2s, background 0.2s;
-      box-shadow: 0 5px 20px rgba(255,255,255,0.1);
+      padding: 14px 40px; font-size: 15px; font-weight: bold; background: #ffffff; color: #000000; 
+      border: none; border-radius: 30px; cursor: pointer; transition: transform 0.2s, background 0.2s; box-shadow: 0 5px 20px rgba(255,255,255,0.1);
     }
     #actionButton:hover { transform: scale(1.03); background: #f0f0f0; }
     #actionButton:disabled { background: #222; color: #555; cursor: not-allowed; transform: none; }
     
-    /* HARDWARE ADJUSTMENT CALIBRATION PANEL */
     .calibration-box { 
-      width: 100%; 
-      max-width: 980px; 
-      background: #111115; 
-      padding: 20px; 
-      box-sizing: border-box; 
-      border-radius: 12px; 
-      border: 1px solid #222;
+      width: 100%; max-width: 980px; background: #111115; padding: 20px; box-sizing: border-box; 
+      border-radius: 12px; border: 1px solid #222;
     }
-    .panel-heading {
-      font-size: 12px;
-      text-transform: uppercase;
-      color: #00d2ff;
-      letter-spacing: 1px;
-      margin-bottom: 15px;
-      font-weight: bold;
-    }
-    .slider-row { 
-      display: flex; 
-      justify-content: space-between; 
-      align-items: center; 
-      margin-bottom: 12px; 
-    }
-    .slider-row:last-child { margin-bottom: 0; }
+    .panel-heading { font-size: 12px; text-transform: uppercase; color: #00d2ff; letter-spacing: 1px; margin-bottom: 15px; font-weight: bold; display: flex; justify-content: space-between;}
+    .slider-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
     label { font-size: 13px; width: 200px; color: #bbb; }
     input[type=range] { flex-grow: 1; margin: 0 20px; accent-color: #00d2ff; }
     .value-display { width: 60px; text-align: right; font-size: 13px; font-family: monospace; color: #00d2ff; font-weight: bold;}
+    
+    .checkbox-row { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: bold; color: #ffeb3b; background: rgba(255, 235, 59, 0.1); padding: 10px; border-radius: 6px; border: 1px solid rgba(255, 235, 59, 0.3); margin-bottom: 15px;}
+    input[type=checkbox] { width: 18px; height: 18px; cursor: pointer; }
   </style>
 
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/vision_bundle.mjs" type="module"></script>
@@ -173,7 +96,14 @@
   </div>
 
   <div class="calibration-box">
-    <div class="panel-heading">Manual Hardware Calibration (Fine-Tune 3D Model Fit)</div>
+    <div class="panel-heading">
+      <span>Manual Hardware Calibration (Fine-Tune 3D Model Fit)</span>
+    </div>
+
+    <div class="checkbox-row">
+      <input type="checkbox" id="maskToggle" checked>
+      <label for="maskToggle" style="width: auto; color: #ffeb3b; cursor: pointer;">ENABLE LIP CLIPPING MASK (Uncheck to see hidden teeth!)</label>
+    </div>
     
     <div class="slider-row">
       <label>Overall Scale Size multiplier</label>
@@ -188,12 +118,6 @@
     </div>
 
     <div class="slider-row">
-      <label>Depth In/Out Position (Z-Axis)</label>
-      <input type="range" id="zAxisModifier" min="-200" max="200" step="1" value="0">
-      <span class="value-display" id="zAxisValueText">0px</span>
-    </div>
-
-    <div class="slider-row">
       <label>Jaw Drop Hinge Amplitude</label>
       <input type="range" id="hingeModifier" min="0.0" max="3.0" step="0.1" value="1.0">
       <span class="value-display" id="hingeValueText">1.0x</span>
@@ -205,24 +129,20 @@
   <script type="module">
     import { FaceLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/vision_bundle.mjs";
 
-    // DOM Links
     const video = document.getElementById("webcam");
     const leftCtx = document.getElementById("leftCanvas").getContext("2d");
     const rightCtx = document.getElementById("rightCanvas").getContext("2d");
     const threeHiddenCanvas = document.getElementById("threeHiddenCanvas");
     const actionButton = document.getElementById("actionButton");
     const consoleOutput = document.getElementById("consoleOutput");
+    const maskToggle = document.getElementById("maskToggle");
 
-    // Dynamic Tracking State Modifiers
     let adjustmentScale = 1.00;
     let adjustmentY = 0;
-    let adjustmentZ = 0;
     let adjustmentHinge = 1.0;
 
-    // Connect Sliders to Variables
     document.getElementById('scaleModifier').addEventListener('input', (e) => { adjustmentScale = parseFloat(e.target.value); document.getElementById('scaleValueText').innerText = adjustmentScale.toFixed(2) + 'x'; });
     document.getElementById('yAxisModifier').addEventListener('input', (e) => { adjustmentY = parseInt(e.target.value); document.getElementById('yAxisValueText').innerText = adjustmentY + 'px'; });
-    document.getElementById('zAxisModifier').addEventListener('input', (e) => { adjustmentZ = parseInt(e.target.value); document.getElementById('zAxisValueText').innerText = adjustmentZ + 'px'; });
     document.getElementById('hingeModifier').addEventListener('input', (e) => { adjustmentHinge = parseFloat(e.target.value); document.getElementById('hingeValueText').innerText = adjustmentHinge.toFixed(1) + 'x'; });
 
     function writeLog(text, type = 'normal') {
@@ -233,14 +153,13 @@
       consoleOutput.scrollTop = consoleOutput.scrollHeight;
     }
 
-    // --- THREE.JS GRAPHICS SETUP ---
+    // --- ORTHOGRAPHIC CAMERA (PREVENTS DEPTH CLIPPING) ---
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(40, 480 / 360, 0.1, 2000);
-    camera.position.set(0, 0, 0); // Camera anchored at origin, looking directly down negative Z space
+    const camera = new THREE.OrthographicCamera(-240, 240, 180, -180, -2000, 2000);
+    camera.position.z = 1000;
 
     const renderer = new THREE.WebGLRenderer({ canvas: threeHiddenCanvas, alpha: true, antialias: true });
     renderer.setSize(480, 360);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
     scene.add(new THREE.AmbientLight(0xffffff, 1.5));
     const pointLight = new THREE.PointLight(0xffffff, 0.8);
@@ -258,8 +177,6 @@
     let isModelLoaded = false;
     let structuralModelWidth = 1.0;
 
-    writeLog("Three.js context generated successfully. Loading teeth.glb...");
-
     const loader = new THREE.GLTFLoader();
     loader.load('teeth.glb?nocache=' + Date.now(), function (gltf) {
       try {
@@ -272,25 +189,21 @@
         calculationBox.getSize(physicalSize);
         
         structuralModelWidth = physicalSize.x;
-        writeLog(`Model Loaded! Geometry size dimensions: Width: ${physicalSize.x.toFixed(2)}, Height: ${physicalSize.y.toFixed(2)}`, 'success');
+        writeLog(`Model Loaded! Size: W: ${physicalSize.x.toFixed(2)}, H: ${physicalSize.y.toFixed(2)}`, 'success');
 
         structuralModel.traverse((child) => {
           if (child.isMesh) {
-            // Apply clean physical enamel lighting texture map variables
             child.material = new THREE.MeshPhysicalMaterial({
               color: child.material.color || new THREE.Color(0xffffff),
-              roughness: 0.1,
-              metalness: 0.0,
-              clearcoat: 1.0,
-              clearcoatRoughness: 0.02
+              roughness: 0.1, metalness: 0.0, clearcoat: 1.0
             });
-            child.material.vertexColors = false; // Disables messy raw baked color profiles
+            child.material.vertexColors = false;
 
             const partialBox = new THREE.Box3().setFromObject(child);
             const partialCenter = new THREE.Vector3();
             partialBox.getCenter(partialCenter);
             
-            // Re-center mesh coordinate alignment
+            // Align by pushing the model coordinates back to pure center 0,0,0
             child.position.sub(physicalCenter);
 
             if (partialCenter.y > physicalCenter.y) {
@@ -307,77 +220,59 @@
         
         verifySystemReady();
       } catch (err) {
-        writeLog(`Processing Error: Failed analyzing inner structural geometry meshes: ${err.message}`, 'error');
+        writeLog(`Processing Error: ${err.message}`, 'error');
       }
-    }, function (xhr) {
-      // Progress loop
-    }, function (error) {
-      writeLog(`CRITICAL FILE ERROR: The browser cannot find or read 'teeth.glb'. Check file path or run via Local Server. Details: ${error.message}`, 'error');
+    }, undefined, function (error) {
+      writeLog(`CRITICAL FILE ERROR: Cannot find teeth.glb. Run on local server.`, 'error');
     });
 
-    // --- MEDIAPIPE FACE INTERPRETATION AI ---
+    // --- AI TRACKING ---
     let faceLandmarker;
     let lastProcessedVideoTime = -1;
     let coreEngineActive = false;
 
-    // Precise 20-point tracking boundary map matching the lip margins
     const LIP_OCCLUSION_PATH = [78, 191, 80, 81, 82, 13, 312, 311, 310, 415, 308, 324, 318, 402, 317, 14, 87, 178, 88, 95];
 
     async function initializeAIModule() {
       try {
-        writeLog("Downloading MediaPipe Face WebAssembly tracking configurations...");
         const visionAssembly = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm");
         faceLandmarker = await FaceLandmarker.createFromOptions(visionAssembly, {
-          baseOptions: { 
-            modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task", 
-            delegate: "GPU" 
-          },
-          runningMode: "VIDEO",
-          numFaces: 1
+          baseOptions: { modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task", delegate: "GPU" },
+          runningMode: "VIDEO", numFaces: 1
         });
-        writeLog("MediaPipe Neural Tracking Engine fully operational.", 'success');
+        writeLog("MediaPipe Engine online.", 'success');
         verifySystemReady();
       } catch (err) {
-        writeLog(`CRITICAL AI ERROR: Failed initializing tracking networks: ${err.message}`, 'error');
+        writeLog(`AI ERROR: ${err.message}`, 'error');
       }
     }
 
     function verifySystemReady() {
       if (isModelLoaded && faceLandmarker) {
         actionButton.disabled = false;
-        actionButton.innerText = "Initialize Live Dual AR Sync";
-        writeLog("All modules online. System ready for runtime mirror mapping.", 'success');
+        actionButton.innerText = "Initialize Camera";
       }
     }
 
     actionButton.addEventListener("click", async () => {
       actionButton.style.display = "none";
-      writeLog("Requesting local hardware camera processing access permission...");
-      
       try {
-        const streamingMedia = await navigator.mediaDevices.getUserMedia({ 
-          video: { width: 640, height: 480, facingMode: "user" } 
-        });
+        const streamingMedia = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480, facingMode: "user" } });
         video.srcObject = streamingMedia;
         video.addEventListener("loadeddata", () => {
-          writeLog("Hardware capture active. Core render loop tracking initialized.", 'success');
           coreEngineActive = true;
           window.requestAnimationFrame(renderCoreLoop);
         });
       } catch (err) {
-        writeLog(`CAMERA BLOCK: Hardware video extraction denied by browser permission setup: ${err.message}`, 'error');
+        writeLog(`CAMERA BLOCK: ${err.message}`, 'error');
       }
     });
 
-    // --- MASTER RUNTIME PROCESS LOOP ---
     function renderCoreLoop() {
       if (video.currentTime !== lastProcessedVideoTime) {
         lastProcessedVideoTime = video.currentTime;
-        
-        // Execute Face Mesh calculations
         const trackingOutputs = faceLandmarker.detectForVideo(video, performance.now());
 
-        // Stream clean frame to both canvases instantly
         leftCtx.drawImage(video, 0, 0, 480, 360);
         rightCtx.drawImage(video, 0, 0, 480, 360);
 
@@ -389,71 +284,66 @@
           const anchorUpperLip = coordinates[13];
           const anchorLowerLip = coordinates[14];
 
-          // Linear conversions translating coordinate bounds to processing frame sizing
           const frameMouthWidth = Math.abs(anchorRight.x - anchorLeft.x) * 480;
           const frameMouthHeight = Math.abs(anchorLowerLip.y - anchorUpperLip.y) * 360;
 
-          // --- LEFT CONTAINER DISPLAY (MATHEMATICAL MESH) ---
+          // LEFT CANVAS (Dots)
           leftCtx.fillStyle = "#ff4444";
           LIP_OCCLUSION_PATH.forEach(index => {
             const node = coordinates[index];
-            leftCtx.beginPath();
-            leftCtx.arc(node.x * 480, node.y * 360, 2, 0, 2 * Math.PI);
-            leftCtx.fill();
+            leftCtx.beginPath(); leftCtx.arc(node.x * 480, node.y * 360, 2, 0, 2 * Math.PI); leftCtx.fill();
           });
 
-          // Draw center processing check crosshair
-          leftCtx.strokeStyle = "rgba(255,255,255,0.2)";
-          leftCtx.beginPath(); leftCtx.moveTo(240,0); leftCtx.lineTo(240,360); leftCtx.moveTo(0,180); leftCtx.lineTo(480,180); leftCtx.stroke();
-
-
-          // --- RIGHT CONTAINER DISPLAY (TRY-ON OVERLAY) ---
-          if (frameMouthHeight > 3) {
+          // RIGHT CANVAS (AR Try-On)
+          
+          // ALWAYS render teeth if Mask is OFF, otherwise only when mouth is slightly open
+          const isMaskEnabled = maskToggle.checked;
+          
+          if (!isMaskEnabled || frameMouthHeight > 3) {
             upperJawGroup.visible = true;
             lowerJawGroup.visible = true;
 
-            // Perspective Matrix Coordinate Interpolation
-            const spaceDepthDistance = 33 / (frameMouthWidth / 480);
-            
-            const spaceViewportX = ((anchorLeft.x + anchorRight.x) / 2 - 0.5) * (480 / 360) * spaceDepthDistance;
-            const spaceViewportUpperY = (0.5 - anchorUpperLip.y) * spaceDepthDistance;
-            const spaceViewportLowerY = (0.5 - anchorLowerLip.y) * spaceDepthDistance;
-
-            // Sizing Uniform Application
-            const processingScale = (frameMouthWidth / structuralModelWidth) * 0.095 * adjustmentScale;
+            const processingScale = (frameMouthWidth / structuralModelWidth) * 1.05 * adjustmentScale;
             masterAssetContainer.scale.set(processingScale, processingScale, processingScale);
 
-            // Positioning translations factoring in slider modification offsets
-            upperJawGroup.position.set(spaceViewportX, spaceViewportUpperY + (adjustmentY * 0.1), -spaceDepthDistance + adjustmentZ);
-            lowerJawGroup.position.set(spaceViewportX, spaceViewportLowerY + (adjustmentY * 0.1), -spaceDepthDistance + adjustmentZ);
+            const centerX = ((anchorLeft.x + anchorRight.x) / 2) * 480;
+            const topY = anchorUpperLip.y * 360;
+            const bottomY = anchorLowerLip.y * 360;
 
-            // Angle alignment tracking rotations
+            const threeX = centerX - 240;
+            const threeUpperY = 180 - topY;
+            const threeLowerY = 180 - bottomY;
+
+            upperJawGroup.position.set(threeX, threeUpperY + adjustmentY, 0);
+            lowerJawGroup.position.set(threeX, threeLowerY + adjustmentY, 0);
+
             const headYawAngle = Math.atan2(anchorRight.z - anchorLeft.z, anchorRight.x - anchorLeft.x);
             const headRollAngle = Math.atan2(anchorRight.y - anchorLeft.y, anchorRight.x - anchorLeft.x);
             
             upperJawGroup.rotation.set(0, headYawAngle, -headRollAngle);
-            
-            // TMJ Physics Hinge Application
             const dynamicHingeRotation = Math.max(0, (frameMouthHeight * 0.015) * adjustmentHinge);
             lowerJawGroup.rotation.set(-dynamicHingeRotation, headYawAngle, -headRollAngle);
 
-            // Execute processing background compilation
             renderer.render(scene, camera);
 
-            // CLIP OPEN HOLE SEAM MASK
-            rightCtx.save();
-            rightCtx.beginPath();
-            LIP_OCCLUSION_PATH.forEach((index, loopIdx) => {
-              const node = coordinates[index];
-              if (loopIdx === 0) rightCtx.moveTo(node.x * 480, node.y * 360);
-              else rightCtx.lineTo(node.x * 480, node.y * 360);
-            });
-            rightCtx.closePath();
-            rightCtx.clip();
-
-            // Stitch composite 3D layer mapping inside lip structure boundaries
-            rightCtx.drawImage(threeHiddenCanvas, 0, 0, 480, 360);
-            rightCtx.restore();
+            // ONLY CLIP IF CHECKBOX IS CHECKED
+            if (isMaskEnabled) {
+              rightCtx.save();
+              rightCtx.beginPath();
+              LIP_OCCLUSION_PATH.forEach((index, loopIdx) => {
+                const node = coordinates[index];
+                if (loopIdx === 0) rightCtx.moveTo(node.x * 480, node.y * 360);
+                else rightCtx.lineTo(node.x * 480, node.y * 360);
+              });
+              rightCtx.closePath();
+              rightCtx.clip();
+              rightCtx.drawImage(threeHiddenCanvas, 0, 0, 480, 360);
+              rightCtx.restore();
+            } else {
+              // NO CLIP - JUST DRAW THE TEETH AS A STICKER OVER THE LIPS
+              rightCtx.drawImage(threeHiddenCanvas, 0, 0, 480, 360);
+            }
+            
           } else {
             upperJawGroup.visible = false;
             lowerJawGroup.visible = false;
@@ -463,7 +353,6 @@
       window.requestAnimationFrame(renderCoreLoop);
     }
 
-    // Begin Evaluation
     initializeAIModule();
   </script>
 </body>
