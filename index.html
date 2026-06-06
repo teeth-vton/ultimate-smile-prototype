@@ -5,9 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ultimate Enterprise AR Teeth Whitening</title>
   <style>
-    /* ----------------------------------------- */
-    /* 1. PROFESSIONAL CSS STYLING & LAYOUT      */
-    /* ----------------------------------------- */
     body { 
       margin: 0; 
       background-color: #0f172a; 
@@ -23,7 +20,6 @@
 
     h1 { margin-top: 0; font-size: 1.5rem; color: #38bdf8; text-transform: uppercase; letter-spacing: 1px;}
 
-    /* The main video container */
     #webar-player { 
       width: 100%; 
       max-width: 720px; 
@@ -39,7 +35,6 @@
       position: relative;
     }
 
-    /* Start button styling */
     #start-btn { 
       padding: 16px 32px; 
       font-size: 1.2rem; 
@@ -56,9 +51,6 @@
     #start-btn:hover { background: #059669; transform: translateY(-2px); }
     #start-btn:disabled { background: #475569; cursor: not-allowed; transform: none; box-shadow: none;}
 
-    /* ----------------------------------------- */
-    /* 2. ON-SCREEN TERMINAL LOGGING STYLES      */
-    /* ----------------------------------------- */
     #debug-console {
       width: 100%;
       max-width: 720px;
@@ -85,46 +77,32 @@
   <h1>🦷 Virtual Teeth Try-On Engine</h1>
   <button id="start-btn">Initialize Camera & AR Engine</button>
   
-  <div id="webar-player">
-    </div>
+  <div id="webar-player"></div>
 
   <div id="debug-console">
-    <div class="log-line log-info">[System] Debug console initialized. Waiting for user input...</div>
+    <div class="log-line log-info">[System] Debug console initialized. Waiting for user click...</div>
   </div>
 
   <script type="module">
-    /* ----------------------------------------- */
-    /* 3. ON-SCREEN LOGGING SYSTEM               */
-    /* ----------------------------------------- */
     const debugConsole = document.getElementById('debug-console');
     
-    // Custom function to write directly to the screen
     function logToScreen(message, type = 'info') {
       const line = document.createElement('div');
       line.className = `log-line log-${type}`;
       const time = new Date().toLocaleTimeString();
       line.innerText = `[${time}] ${message}`;
       debugConsole.appendChild(line);
-      // Auto-scroll to the bottom so you always see the latest log
       debugConsole.scrollTop = debugConsole.scrollHeight; 
       console.log(`[${type.toUpperCase()}] ${message}`);
     }
 
-    // Catch random unseen website errors and force them onto the screen
     window.onerror = function(msg, url, lineNo, columnNo, error) {
-      logToScreen(`CRITICAL SCRIPT ERROR: ${msg} (Line: ${lineNo})`, 'error');
+      logToScreen(`CRITICAL ERROR: ${msg}`, 'error');
       return false;
     };
 
-    /* ----------------------------------------- */
-    /* 4. SDK MODULE IMPORTS (STABLE VERSION)    */
-    /* ----------------------------------------- */
-    // Explicitly using version 1.18.1 so the CDN never breaks unexpectedly
     import { Webcam, Player, Module, Effect, Dom } from 'https://cdn.jsdelivr.net/npm/@banuba/webar@1.18.1/dist/BanubaSDK.browser.esm.js';
 
-    /* ----------------------------------------- */
-    /* 5. MAIN AR INITIALIZATION FUNCTION        */
-    /* ----------------------------------------- */
     async function startVirtualTryOn() {
       const startBtn = document.getElementById('start-btn');
       startBtn.disabled = true;
@@ -133,18 +111,7 @@
       logToScreen("Starting sequence initiated...", "info");
 
       try {
-        // STEP 1: FORCE CAMERA PERMISSION FIRST
-        logToScreen("Requesting strict hardware camera access from browser...", "warn");
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-          logToScreen("Browser granted camera permission successfully!", "success");
-          // Stop the test stream so Banuba can take over
-          stream.getTracks().forEach(track => track.stop()); 
-        } catch (camErr) {
-          throw new Error("Camera blocked by browser. Please click the padlock icon in your URL bar and explicitly ALLOW the camera.");
-        }
-
-        // STEP 2: BOOT BANUBA AI ENGINE
+        // STEP 1: BOOT BANUBA AI ENGINE FIRST (No more camera hardware jamming!)
         logToScreen("Connecting to Banuba Engine with your Client Token...", "info");
         const player = await Player.create({
           clientToken: 'Qk5CIAnZ5QCVvwyhPDHnIWjc3+QSQYDbFloei6q+6wZPVQacNxvodLMeMN1Z6u+eMjsVO2RnoQEQvvqcTpFxGyGvZ2gM8fOpciy133xGGkHjm83uMYgANT5XlDOEkQ2jO1NtbO31RLxAPv1HZawc+E/V6l/rRy/21N11YNrAR9jxFqQdJFF3AnsxPdkehXSppDgTV5QZVxz8ovO3d3xD0bNwv7zw31tqAMShrEPEFGM4wIED7rs98sL7+rXv6HNkiQOR0zaiLMHCYMY7y5QoApY8bZqSwJPfMoI/4nRPh92V9j2w8t+5L4sASql9IeicNUN1GgSRo4GoveD4HzdSytBsV+PiV4Mh+7AZV54rU4kVh0slIXBOK72e7YR+l3hPNJiSwDMJDc/9i3KnUwl+aDhxGP5JRlov6TzTiJ7FmyPxMveiZO94UvJtq3xktx3s1sGTRPXF1lGXaWAEBN5oAb2Nh3nN7UbV1ooC3y8+Qnns/agZnJ0DdU25LPNvZ/cvllQuuSu9IUv9gDy5N5QzUTmQ+JcUxM1BNWQmlDSwQtSwpXjQvJdme1OcuNV7N4PU6yCLlh+/kQmSOVeKxiQPdYrUqsKht2NNnrnNv09zwfky6fqeHJSVsbD5lJ5jtdpBVc+dJZazQk7f7IiUg4rCSQ==',
@@ -154,55 +121,41 @@
             'BanubaSDK.data': 'https://cdn.jsdelivr.net/npm/@banuba/webar@1.18.1/dist/BanubaSDK.data',
           }
         });
-        logToScreen("Player created successfully. Token accepted for this domain.", "success");
+        logToScreen("Player created successfully.", "success");
 
-        // STEP 3: LOAD NEURAL NETWORK FOR FACE TRACKING
-        logToScreen("Downloading Heavy Face Tracking Neural Network (this may take a few seconds)...", "warn");
+        // STEP 2: LOAD NEURAL NETWORK
+        logToScreen("Downloading Face Tracking Neural Network...", "warn");
         await player.addModule(new Module('https://cdn.jsdelivr.net/npm/@banuba/webar@1.18.1/dist/modules/face_tracker.zip'));
-        logToScreen("Face Tracker module integrated.", "success");
+        logToScreen("Face Tracker integrated.", "success");
 
-        // STEP 4: BIND WEBCAM TO PLAYER
-        logToScreen("Binding webcam feed into the AR Engine...", "info");
+        // STEP 3: SMOOTH CAMERA START
+        logToScreen("Requesting camera access natively through Banuba...", "info");
         await player.use(new Webcam());
         Dom.render(player, '#webar-player');
-        logToScreen("Webcam rendering mounted to screen.", "success");
+        logToScreen("Webcam is now live and rendering.", "success");
 
-        // STEP 5: APPLY YOUR LOCAL ZIP FILE
+        // STEP 4: APPLY THE TEETH ZIP
         logToScreen("Fetching local file: './TeethWitening_Toggle.zip'...", "info");
         const effect = new Effect('./TeethWitening_Toggle.zip'); 
         await player.applyEffect(effect);
         logToScreen("Teeth AR Effect successfully applied!", "success");
 
-        // STEP 6: START THE LIVE VIDEO LOOP (This fixes the frozen screen!)
-        logToScreen("Unpausing engine and starting live video loop...", "info");
+        // STEP 5: PLAY THE LIVE VIDEO LOOP
+        logToScreen("Starting live video feed loop...", "info");
         player.play();
 
-        // SUCCESS STATE
-        startBtn.style.display = 'none'; // Hide button on perfect success
-        logToScreen("SYSTEM ONLINE. Virtual Try-On is now live.", "success");
+        // SUCCESS
+        startBtn.style.display = 'none';
+        logToScreen("SYSTEM ONLINE. Virtual Try-On is running.", "success");
 
       } catch (error) {
-        // IF ANYTHING BREAKS, IT CATCHES THE ERROR AND PRINTS IT IN RED HERE
         startBtn.innerText = "Error - Check Logs";
         logToScreen("SYSTEM HALTED DUE TO ERROR:", "error");
-        
-        // Print the specific reason it failed
-        if (error.message) {
-          logToScreen(error.message, "error");
-        } else {
-          logToScreen(JSON.stringify(error), "error");
-        }
-        
-        // Common token mismatch hint
-        if(error.message && error.message.includes("token")) {
-           logToScreen("HINT: It looks like a Token Domain mismatch. Make sure Vercel's URL matches what you registered on Banuba.", "warn");
-        }
+        logToScreen(error.message || JSON.stringify(error), "error");
       }
     }
 
-    // Attach the function to the button click
     document.getElementById('start-btn').addEventListener('click', startVirtualTryOn);
-
   </script>
 </body>
 </html>
