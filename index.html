@@ -1,90 +1,1930 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Professional 3D Teeth VTO Engine</title>
-  <script type="importmap">
-    {
-      "imports": {
-        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
-        "mindar-face-three": "https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-face-three.prod.js"
-      }
-    }
-  </script>
-  <style>
-    body { margin: 0; background: #000; overflow: hidden; font-family: sans-serif; }
-    #container { width: 100vw; height: 100vh; position: relative; }
-    #ui-layer { position: absolute; top: 20px; left: 20px; z-index: 20; color: white; background: rgba(0,0,0,0.6); padding: 15px; border-radius: 10px; }
-    #startBtn { padding: 15px 30px; font-size: 18px; cursor: pointer; background: #00d2ff; border: none; border-radius: 5px; font-weight: bold; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultimate Smile Design - Live Agent</title>
+    <style>
+        /**
+         * ============================================================================
+         * ULTIMATE SMILE DESIGN - GLOBAL STYLES & RESET
+         * ============================================================================
+         * The following CSS variables and reset properties define the core aesthetic.
+         * By separating properties line-by-line, we ensure maximum readability and
+         * easier debugging for future UI enhancements.
+         */
+        :root {
+            --font-Glida-Display: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            --usd-gold-primary: #D4AF37;
+            --usd-gold-light: #fbefac;
+            --usd-gold-dark: #aa803c;
+            --usd-bg-dark: #000000;
+            --usd-bg-panel: #111111;
+            --usd-text-light: #ffffff;
+            --usd-text-muted: #e0e0e0;
+            --usd-border-radius: 16px;
+            --usd-shadow-glow: 0px 0px 25px 0px rgba(0, 0, 0, 0.9);
+            --usd-transition-speed: 0.3s;
+        }
+
+        html, body, div, span, applet, object, iframe,
+        h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+        a, abbr, acronym, address, big, cite, code,
+        del, dfn, em, img, ins, kbd, q, s, samp,
+        small, strike, strong, sub, sup, tt, var,
+        b, u, i, center,
+        dl, dt, dd, ol, ul, li,
+        fieldset, form, label, legend,
+        table, caption, tbody, tfoot, thead, tr, th, td,
+        article, aside, canvas, details, embed, 
+        figure, figcaption, footer, header, hgroup, 
+        menu, nav, output, ruby, section, summary,
+        time, mark, audio, video {
+            margin: 0;
+            padding: 0;
+            border: 0;
+            font-size: 100%;
+            font: inherit;
+            vertical-align: baseline;
+        }
+
+        body {
+            background-color: var(--usd-bg-dark);
+            color: var(--usd-text-light);
+            margin: 0;
+            font-family: var(--font-Glida-Display);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            overflow-x: hidden;
+        }
+
+        /**
+         * ============================================================================
+         * VOICE WIDGET CONTAINER
+         * ============================================================================
+         */
+        .voice_agent_main {
+            height: auto;
+            width: auto;
+            position: fixed;
+            bottom: 40px;
+            right: 40px;
+            z-index: 99999;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+
+        /**
+         * ============================================================================
+         * DESKTOP CHAT CONTAINER SIZING & ANIMATION
+         * ============================================================================
+         */
+        .voice_chat_bot_container {
+            width: 344px;
+            height: 520px;
+            background-color: var(--usd-bg-dark);
+            box-shadow: var(--usd-shadow-glow);
+            border: 1px solid rgba(212, 175, 55, 0.15);
+            border-radius: var(--usd-border-radius);
+            position: absolute;
+            bottom: 90px;
+            right: 0;
+            opacity: 0;
+            visibility: hidden;
+            transform: scale(0.8) translateY(20px);
+            transform-origin: bottom right;
+            transition: all var(--usd-transition-speed) cubic-bezier(0.25, 0.8, 0.25, 1);
+            overflow: hidden;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .voice_chat_bot_container.active {
+            opacity: 1;
+            visibility: visible;
+            transform: scale(1) translateY(0);
+            pointer-events: auto;
+        }
+
+        /**
+         * ============================================================================
+         * CHAT BACKGROUND GLOW EFFECT
+         * ============================================================================
+         */
+        .glow_icon_in_chat_box {
+            width: 230px;
+            height: 230px;
+            position: absolute;
+            top: -50px;
+            left: -40px;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .glow_icon_in_chat_box::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: 14px;
+            background: linear-gradient(
+                270deg,
+                var(--usd-gold-dark),
+                #aa803c,
+                var(--usd-gold-light),
+                #fbefac,
+                var(--usd-gold-light),
+                #aa803c,
+                var(--usd-gold-primary)
+            );
+            filter: blur(140px);
+            opacity: 0.5;
+        }
+
+        /**
+         * ============================================================================
+         * HEADER STYLES
+         * ============================================================================
+         */
+        .voice_icon_title_and_close_icon_main {
+            width: 100%;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 16px;
+            box-sizing: border-box;
+            margin-top: 15px;
+            position: relative;
+        }
+
+        .header_title {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        .chat_bot_label {
+            font-size: 20px;
+            letter-spacing: 1.5px;
+            font-family: var(--font-Glida-Display);
+            font-weight: 600;
+            color: var(--usd-gold-primary);
+        }
+
+        #usd-status-box {
+            color: #ffffff;
+            font-size: 10px;
+            font-weight: bold;
+            margin-top: 3px;
+            opacity: 0.6;
+        }
+
+        /**
+         * ============================================================================
+         * TOP ORB CONTAINER (INSIDE CHAT)
+         * ============================================================================
+         */
+        .chat_box_icon_inside_main {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 10px;
+        }
+
+        .chat_box_icon_inside {
+            width: 96px;
+            height: 96px;
+        }
+
+        .chat_box_inside_bot_icon {
+            width: 96px;
+            height: 96px;
+        }
+
+        /**
+         * ============================================================================
+         * CHAT LOG AREA
+         * ============================================================================
+         */
+        .chat_main_container {
+            width: 100%;
+            height: 240px;
+            margin-top: 10px;
+            padding: 16px 16px 8px 16px;
+            overflow-y: auto;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            display: flex;
+            flex-direction: column;
+            box-sizing: border-box;
+            flex-grow: 1;
+        }
+
+        .chat_main_container::-webkit-scrollbar {
+            display: none;
+        }
+
+        /**
+         * ============================================================================
+         * MESSAGE BUBBLES
+         * ============================================================================
+         */
+        .bot_message {
+            position: relative;
+            background-color: #080808;
+            border: 1px solid rgba(212, 175, 55, 0.25);
+            border-radius: 8px;
+            padding: 12px 14px;
+            margin-bottom: 16px;
+            max-width: 85%;
+            color: #ffffff;
+            font-size: 13px;
+            line-height: 1.5;
+            align-self: flex-start;
+            margin-left: 8px;
+            font-family: inherit;
+            letter-spacing: 0.3px;
+            box-sizing: border-box;
+        }
+
+        .bot_message > p {
+            margin: 0;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .bot_message::before {
+            content: "";
+            position: absolute;
+            left: -6.5px;
+            bottom: 25%;
+            width: 11px;
+            height: 11px;
+            background-color: #080808;
+            border-left: 1px solid rgba(212, 175, 55, 0.25);
+            border-top: 1px solid rgba(212, 175, 55, 0.25);
+            transform: rotate(-45deg);
+            border-top-left-radius: 2px;
+        }
+
+        .user_message {
+            align-self: flex-end;
+            text-align: right;
+            color: var(--usd-text-muted);
+            font-size: 13px;
+            margin-bottom: 16px;
+            max-width: 85%;
+            line-height: 1.5;
+            font-family: inherit;
+            letter-spacing: 0.3px;
+            box-sizing: border-box;
+            background: transparent;
+            border: none;
+            padding: 0;
+        }
+
+        .user_message > p {
+            margin: 0;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        /**
+         * ============================================================================
+         * ACTION LINK CARDS
+         * ============================================================================
+         */
+        .usd-link-card {
+            display: block;
+            width: 100%;
+            margin-top: 8px;
+            padding: 10px;
+            background: linear-gradient(135deg, #111111, #222222);
+            border: 1px solid var(--usd-gold-primary);
+            color: var(--usd-gold-primary);
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: bold;
+            text-align: center;
+            cursor: pointer;
+            box-sizing: border-box;
+            transition: all 0.2s;
+        }
+
+        .usd-link-card:hover {
+            background: var(--usd-gold-primary);
+            color: #111111;
+            transform: translateY(-2px);
+        }
+
+        #usd-interim-text { 
+            color: var(--usd-gold-primary); 
+            text-align: center; 
+            font-style: italic; 
+            font-size: 13px; 
+            font-weight: bold; 
+            min-height: 18px; 
+            margin-bottom: 5px; 
+            transition: color 0.2s; 
+        }
+
+        /**
+         * ============================================================================
+         * CONTROLS FOOTER (VOICE MODE ACTIVE)
+         * ============================================================================
+         */
+        .chat_icon_and_voice_and_close_icon_container_main {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 24px;
+            box-sizing: border-box;
+        }
+
+        .chat_icon_main {
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            opacity: 0.8;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .chat_icon_main:hover {
+            transform: scale(1.15);
+            opacity: 1;
+        }
+
+        .voice_icon_main {
+            width: 90px;
+            height: 90px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .voice_animation_icon {
+            width: 90px;
+            height: 90px;
+            overflow: visible;
+        }
+
+        .close_icon_main {
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            opacity: 0.8;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .close_icon_main:hover {
+            transform: scale(1.15);
+            opacity: 1;
+        }
+
+        /**
+         * ============================================================================
+         * TEXT INPUT PANEL (TEXT MODE ACTIVE)
+         * ============================================================================
+         */
+        .massge_input_main {
+            width: 100%;
+            height: 50px;
+            padding: 0px 16px;
+            margin-top: 10px;
+            margin-bottom: 20px;
+            box-sizing: border-box;
+        }
+
+        .input_box_and_icon_main {
+            width: 100%;
+            height: 100%;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            background-color: rgba(255, 255, 255, 0.03);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            box-sizing: border-box;
+        }
+
+        .chat_input_box {
+            width: 85%;
+            height: 100%;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: #ffffff;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        .chat_input_box::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 14px;
+        }
+
+        .send_button_icon {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .send_button_icon:hover {
+            transform: scale(1.1);
+        }
+
+        /**
+         * ============================================================================
+         * MAIN FLOATING BUBBLE
+         * ============================================================================
+         */
+        .voice_chat_bot_icon_container {
+            width: 76px;
+            height: 76px;
+            border-radius: 50%;
+            cursor: pointer;
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            opacity: 1;
+            visibility: visible;
+            transform: scale(1);
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            pointer-events: auto;
+            box-shadow: 0px 0px 16.7px 0px rgba(255, 255, 255, 0.25);
+        }
+
+        .voice_chat_bot_icon_container.hidden {
+            opacity: 0;
+            visibility: hidden;
+            transform: scale(0.5);
+            pointer-events: none;
+        }
+
+        .home_screen_bot_icon {
+            width: 76px;
+            height: 76px;
+        }
+
+        /**
+         * ============================================================================
+         * RATING & DIALOG CONFIRM OVERLAYS
+         * ============================================================================
+         */
+        #usd-inline-rating {
+            display: none;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            padding: 12px;
+            text-align: center;
+            margin-top: auto;
+        }
+
+        #usd-rating-title { 
+            color: #fff; 
+            font-size: 14px; 
+            margin-bottom: 10px; 
+            font-weight: bold; 
+            letter-spacing: 0.5px;
+        }
+
+        .usd-stars { 
+            display: flex; 
+            justify-content: center; 
+            gap: 10px; 
+            cursor: pointer; 
+        }
+
+        .usd-star { 
+            font-size: 24px; 
+            color: #333333; 
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            transition: transform 0.2s, color 0.2s, text-shadow 0.2s; 
+        }
+
+        .usd-star:hover, .usd-star.active { 
+            color: var(--usd-gold-primary); 
+            transform: scale(1.2);
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.6);
+        }
+
+        #usd-rating-thanks { 
+            display: none; 
+            color: var(--usd-gold-primary); 
+            font-size: 12px; 
+            margin-top: 10px; 
+            font-weight: bold; 
+        }
+
+        #usd-end-confirm-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(10, 10, 10, 0.95);
+            border-radius: 14px;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 101;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .usd-confirm-title { 
+            color: #fff; 
+            font-size: 15px; 
+            margin-bottom: 18px; 
+            font-weight: bold; 
+        }
+
+        .usd-confirm-btns { 
+            display: flex; 
+            gap: 15px; 
+        }
+
+        .usd-btn-yes { 
+            background: #ff4444; 
+            color: #fff; 
+            border: none; 
+            padding: 8px 18px; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            font-weight: bold; 
+        }
+
+        .usd-btn-no { 
+            background: #444; 
+            color: #fff; 
+            border: none; 
+            padding: 8px 18px; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            font-weight: bold; 
+        }
+
+        /**
+         * ============================================================================
+         * VOICE TRIGGER RIPPLE SPEAKING ANIMATIONS
+         * ============================================================================
+         */
+        @keyframes rippleSpeak1 {
+            0% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.15); opacity: 0.45; }
+            100% { transform: scale(1); opacity: 0.8; }
+        }
+        @keyframes rippleSpeak2 {
+            0% { transform: scale(1); opacity: 0.6; }
+            50% { transform: scale(1.3); opacity: 0.25; }
+            100% { transform: scale(1); opacity: 0.6; }
+        }
+        @keyframes rippleSpeak3 {
+            0% { transform: scale(1); opacity: 0.4; }
+            50% { transform: scale(1.45); opacity: 0.1; }
+            100% { transform: scale(1); opacity: 0.4; }
+        }
+
+        .voice_icon_main svg .ripple-1,
+        .voice_icon_main svg .ripple-2,
+        .voice_icon_main svg .ripple-3 {
+            transform-origin: 45px 45px;
+            transition: transform 0.3s ease;
+        }
+
+        .voice_icon_main.is-listening svg .ripple-1,
+        .usd-speaking #usd-voice-trigger-btn svg .ripple-1 {
+            animation: rippleSpeak1 1.2s infinite ease-in-out;
+        }
+        .voice_icon_main.is-listening svg .ripple-2,
+        .usd-speaking #usd-voice-trigger-btn svg .ripple-2 {
+            animation: rippleSpeak2 1.2s infinite ease-in-out 0.2s;
+        }
+        .voice_icon_main.is-listening svg .ripple-3,
+        .usd-speaking #usd-voice-trigger-btn svg .ripple-3 {
+            animation: rippleSpeak3 1.2s infinite ease-in-out 0.4s;
+        }
+
+        /**
+         * ============================================================================
+         * PREMIUM GLASSY SIRI ORB SPECIFICATIONS
+         * ============================================================================
+         */
+        .fluid-ribbon {
+            transform-origin: 50px 50px;
+            transition: transform 0.4s ease-out;
+        }
+
+        @keyframes rotateCW {
+            0% { transform: rotate(0deg) scale(1); }
+            50% { transform: rotate(180deg) scale(1.05); }
+            100% { transform: rotate(360deg) scale(1); }
+        }
+
+        @keyframes rotateCCW {
+            0% { transform: rotate(360deg) scale(1); }
+            50% { transform: rotate(180deg) scale(0.95); }
+            100% { transform: rotate(0deg) scale(1); }
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% { transform: scale(1); opacity: 0.75; }
+            50% { transform: scale(1.15); opacity: 1; }
+        }
+
+        .fluid-ribbon.r1 { animation: rotateCW 12s linear infinite; }
+        .fluid-ribbon.r2 { animation: rotateCCW 16s linear infinite; }
+        .fluid-ribbon.r3 { animation: rotateCW 14s ease-in-out infinite; }
+        .fluid-ribbon.r4 { animation: rotateCCW 18s ease-in-out infinite; }
+        .orb-core { animation: pulseGlow 4s ease-in-out infinite; transform-origin: 50px 50px; }
+
+        .usd-speaking .fluid-ribbon.r1 { animation: rotateCW 2.2s linear infinite !important; }
+        .usd-speaking .fluid-ribbon.r2 { animation: rotateCCW 2.8s linear infinite !important; }
+        .usd-speaking .fluid-ribbon.r3 { animation: rotateCW 2.5s ease-in-out infinite !important; }
+        .usd-speaking .fluid-ribbon.r4 { animation: rotateCCW 3.2s ease-in-out infinite !important; }
+        .usd-speaking .orb-core { animation: pulseGlow 1s ease-in-out infinite !important; }
+
+        .usd-thinking .fluid-ribbon.r1 { animation: rotateCW 7s linear infinite !important; }
+        .usd-thinking .fluid-ribbon.r2 { animation: rotateCCW 9s linear infinite !important; }
+        .usd-thinking .fluid-ribbon.r3 { animation: rotateCW 8s ease-in-out infinite !important; }
+        .usd-thinking .fluid-ribbon.r4 { animation: rotateCCW 10s ease-in-out infinite !important; }
+        .usd-thinking .orb-core { animation: pulseGlow 1.8s ease-in-out infinite !important; }
+
+        .usd-listening .fluid-ribbon.r1 { animation: rotateCW 5s linear infinite !important; }
+        .usd-listening .fluid-ribbon.r2 { animation: rotateCCW 6.5s linear infinite !important; }
+        .usd-listening .fluid-ribbon.r3 { animation: rotateCW 5.8s ease-in-out infinite !important; }
+        .usd-listening .fluid-ribbon.r4 { animation: rotateCCW 7.2s ease-in-out infinite !important; }
+        .usd-listening .orb-core { animation: pulseGlow 2.5s ease-in-out infinite !important; }
+
+        /**
+         * ============================================================================
+         * MOBILE RESPONSIVENESS & SCALING
+         * ============================================================================
+         */
+        @media (max-width: 480px) {
+            .voice_agent_main { 
+                bottom: 20px; 
+                right: 20px; 
+            }
+            .voice_chat_bot_container { 
+                width: calc(100vw - 40px); 
+                height: 420px; 
+                max-height: 80vh;
+                bottom: 75px; 
+            }
+            .chat_main_container { 
+                padding: 12px; 
+            }
+            .home_screen_bot_icon { 
+                width: 65px; 
+                height: 65px; 
+            }
+            .voice_chat_bot_icon_container { 
+                width: 65px; 
+                height: 65px; 
+            }
+            .chat_box_icon_inside { 
+                width: 75px; 
+                height: 75px; 
+            }
+            .chat_box_inside_bot_icon { 
+                width: 75px; 
+                height: 75px; 
+            }
+            .voice_icon_main {
+                width: 75px;
+                height: 75px;
+            }
+        }
+    </style>
+    <!-- ⚡ HIGH-END SILERO VAD & ONNX RUNTIME -->
+    <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.14.0/dist/ort.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@ricky0123/vad-web@0.0.7/dist/bundle.min.js"></script>
+</head>
 </head>
 <body>
 
-  <div id="ui-layer">
-    <h3>System Status: <span id="status">Waiting...</span></h3>
-    <button id="startBtn">INITIALIZE CAMERA</button>
-  </div>
-  <div id="container"></div>
+    <div id="usd-voice-widget" class="voice_agent_main">
 
-  <script type="module">
-    import * as THREE from 'three';
-    import { MindARThree } from 'mindar-face-three';
-    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+        <!-- MAIN CHAT CONTAINER -->
+        <div id="usd-chat-container" class="voice_chat_bot_container">
+            <!-- GLOWING ORB DECORATION -->
+            <div class="glow_icon_in_chat_box"></div>
 
-    // 1. ENGINE SETUP
-    const container = document.querySelector("#container");
-    const statusText = document.querySelector("#status");
-    const mindarThree = new MindARThree({ container: container });
-    const { renderer, scene, camera } = mindarThree;
+            <!-- CALL CANCELLATION OVERLAY -->
+            <div id="usd-end-confirm-overlay">
+                <div class="usd-confirm-title">Want to end the call?</div>
+                <div class="usd-confirm-btns">
+                    <button class="usd-btn-yes" onclick="confirmEndChat(true)">Yes</button>
+                    <button class="usd-btn-no" onclick="confirmEndChat(false)">No</button>
+                </div>
+            </div>
 
-    // 2. ADD LIGHTING
-    const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
-    scene.add(ambientLight);
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
-    directionalLight.position.set(0, 1, 1);
-    scene.add(directionalLight);
+            <!-- State classes are dynamically toggled on usd-chat-inner-wrap to trigger organic voice morph animations -->
+            <div id="usd-chat-inner-wrap" style="height: 100%; display: flex; flex-direction: column; position: relative; z-index: 10;">
+                
+                <!-- HEADER WITH TEXT MODE CONTROLS -->
+                <div class="voice_icon_title_and_close_icon_main">
+                    
+                    <!-- Text Mode Only: Back to Voice Mic Icon (Left) -->
+                    <div id="usd-text-mic-btn" class="chat_icon_main" style="position: absolute; left: 16px; display: none;" onclick="toggleChatMode()" title="Switch to Voice Mode">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px; height:20px;">
+                            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
+                            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                            <line x1="12" y1="19" x2="12" y2="22"></line>
+                        </svg>
+                    </div>
 
-    // 3. MOUTH ANCHOR
-    const anchor = mindarThree.addAnchor(10); 
-    let teethModel = null;
+                    <div class="header_title">
+                        <div class="chat_bot_label">Ultimate Ai</div>
+                        <div id="usd-status-box">Connected 🟢</div>
+                    </div>
 
-    // 4. LOAD THE MODEL
-    const loader = new GLTFLoader();
-    loader.load('./teeth.glb', (gltf) => {
-      teethModel = gltf.scene;
-      // Adjust scale and position here until it fits
-      teethModel.scale.set(0.6, 0.6, 0.6); 
-      // If it's too far forward, decrease Z (last number)
-      // If it's too high, decrease Y (second number)
-      teethModel.position.set(0, -0.4, 0.1); 
-      teethModel.visible = false; 
-      anchor.group.add(teethModel);
-      statusText.innerText = "Model Loaded.";
-    }, undefined, (err) => {
-      statusText.innerText = "Error loading GLB!";
-      console.error(err);
-    });
+                    <!-- Text Mode Only: Close Chat Icon (Right) -->
+                    <div id="usd-text-close-btn" class="close_icon_main" style="position: absolute; right: 16px; display: none;" onclick="closeChatBtnClicked()" title="End Conversation">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:20px; height:20px;">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </div>
+                </div>
 
-    // 5. ENGINE START
-    document.getElementById("startBtn").onclick = async () => {
-      statusText.innerText = "Starting Camera...";
-      await mindarThree.start();
-      document.getElementById("startBtn").style.display = 'none';
-      statusText.innerText = "Tracking Active.";
+                <!-- TOP ANIMATED GLASSY GOLDEN ORB (EXACT SPECIFICATIONS OF ATTACHED IMAGE) -->
+                <div class="chat_box_icon_inside_main">
+                    <div class="chat_box_icon_inside">
+                        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" class="chat_box_inside_bot_icon" id="usd-glass-orb-svg">
+                            <defs>
+                                <radialGradient id="orbBg" cx="50%" cy="50%" r="50%">
+                                    <stop offset="0%" stop-color="#111111" />
+                                    <stop offset="65%" stop-color="#1b1b1b" />
+                                    <stop offset="85%" stop-color="#101010" />
+                                    <stop offset="100%" stop-color="#05050a" />
+                                </radialGradient>
+                                
+                                <linearGradient id="goldRim" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="rgba(212, 175, 55, 0.55)" />
+                                    <stop offset="50%" stop-color="rgba(255, 248, 220, 0.75)" />
+                                    <stop offset="100%" stop-color="rgba(170, 128, 60, 0.55)" />
+                                </linearGradient>
 
-      renderer.setAnimationLoop(() => {
-        // MOUTH DETECTION LOGIC
-        if (teethModel) {
-            // Check mouth opening (MindAR internal API)
-            const mouthOpening = mindarThree.faceMesh.getBlendshapes()?.jawOpen || 0;
-            // If mouth is open more than 10%, show teeth
-            teethModel.visible = mouthOpening > 0.1;
+                                <linearGradient id="ribbonGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="rgba(212, 175, 55, 0.65)" />
+                                    <stop offset="100%" stop-color="rgba(170, 128, 60, 0.05)" />
+                                </linearGradient>
+                                
+                                <linearGradient id="ribbonGrad2" x1="100%" y1="0%" x2="0%" y2="100%">
+                                    <stop offset="0%" stop-color="rgba(251, 239, 172, 0.75)" />
+                                    <stop offset="100%" stop-color="rgba(196, 157, 71, 0.05)" />
+                                </linearGradient>
+                                
+                                <radialGradient id="coreGlow" cx="50%" cy="50%" r="50%">
+                                    <stop offset="0%" stop-color="#ffffff" stop-opacity="1" />
+                                    <stop offset="25%" stop-color="#fbefac" stop-opacity="0.8" />
+                                    <stop offset="60%" stop-color="#D4AF37" stop-opacity="0.15" />
+                                    <stop offset="100%" stop-color="#D4AF37" stop-opacity="0" />
+                                </radialGradient>
+
+                                <linearGradient id="reflectGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                                    <stop offset="0%" stop-color="#ffffff" stop-opacity="0.12" />
+                                    <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
+                                </linearGradient>
+                            </defs>
+
+                            <circle cx="50" cy="50" r="47" fill="url(#orbBg)" stroke="url(#goldRim)" stroke-width="0.8" />
+
+                            <g id="fluid-group">
+                                <path class="fluid-ribbon r1" d="M18 40 C20 22, 60 12, 80 25 C65 37, 37 37, 18 40 Z" fill="url(#ribbonGrad1)" style="mix-blend-mode: screen;" />
+                                <path class="fluid-ribbon r2" d="M15 57 C12 40, 42 45, 57 65 C37 70, 22 67, 15 57 Z" fill="url(#ribbonGrad2)" style="mix-blend-mode: screen;" />
+                                <path class="fluid-ribbon r3" d="M35 80 C55 65, 85 55, 82 37 C72 57, 52 72, 35 80 Z" fill="rgba(255,255,255,0.35)" style="mix-blend-mode: screen;" />
+                                <path class="fluid-ribbon r4" d="M30 20 C50 30, 70 50, 55 75 C45 60, 35 40, 30 20 Z" fill="url(#ribbonGrad1)" style="mix-blend-mode: screen;" />
+                            </g>
+
+                            <circle class="orb-core" cx="50" cy="50" r="22" fill="url(#coreGlow)" style="mix-blend-mode: screen;" />
+                            <circle cx="50" cy="50" r="47" fill="url(#reflectGrad)" pointer-events="none" />
+                            <path d="M20 11 A32 32 0 0 1 80 11 A37 37 0 0 0 20 11 Z" fill="rgba(255,255,255,0.06)" pointer-events="none" />
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- CHAT LOG -->
+                <div id="usd-chat-log" class="chat_main_container"></div>
+                
+                <!-- INTERIM MIC TEXT -->
+                <div id="usd-interim-text" style="color: #D4AF37; text-align: center; font-style: italic; font-size: 13px; font-weight: bold; min-height: 18px; margin-bottom: 5px;"></div>
+                
+                <!-- CONTROLS FOOTER (VOICE MODE ACTIVE) -->
+                <div class="chat_icon_and_voice_and_close_icon_container_main" id="usd-voice-controls-footer">
+                    <!-- Switch to Text Mode Icon -->
+                    <div class="chat_icon_main" onclick="toggleChatMode()" title="Switch to Text Mode">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:100%; height:100%;">
+                            <rect x="3" y="3" width="18" height="14" rx="3" ry="3" fill="none" stroke="#FFFFFF" stroke-width="2"></rect>
+                            <path d="M7 17l-4 4v-4" fill="none" stroke="#FFFFFF" stroke-width="2"></path>
+                            <line x1="7" y1="7" x2="17" y2="7" stroke="#FFFFFF" stroke-width="2"></line>
+                            <line x1="7" y1="11" x2="13" y2="11" stroke="#FFFFFF" stroke-width="2"></line>
+                        </svg>
+                    </div>
+
+                    <!-- PREMIUM MIC ICON -->
+                    <div class="voice_icon_main is-listening" id="usd-voice-trigger-btn">
+                        <svg viewBox="0 0 90 90" xmlns="http://www.w3.org/2000/svg" class="voice_animation_icon">
+                            <defs>
+                                <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="#fbefac" />
+                                    <stop offset="30%" stop-color="#D4AF37" />
+                                    <stop offset="70%" stop-color="#aa803c" />
+                                    <stop offset="100%" stop-color="#be9644" />
+                                </linearGradient>
+                                <filter id="micShadow" x="-20%" y="-20%" width="140%" height="140%">
+                                    <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.5"/>
+                                </filter>
+                            </defs>
+                            <circle cx="45" cy="45" r="41" fill="none" stroke="rgba(212, 175, 55, 0.25)" stroke-width="1" class="ripple-3" />
+                            <circle cx="45" cy="45" r="33" fill="none" stroke="rgba(212, 175, 55, 0.45)" stroke-width="1.2" class="ripple-2" />
+                            <circle cx="45" cy="45" r="25" fill="none" stroke="rgba(212, 175, 55, 0.70)" stroke-width="1.5" class="ripple-1" />
+                            <circle cx="45" cy="45" r="20" fill="url(#goldGrad)" filter="url(#micShadow)" />
+                            <g transform="translate(37, 33) scale(0.65)" fill="none" stroke="#111111" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="7" y="2" width="10" height="15" rx="5" fill="#111111" stroke="none" />
+                                <path d="M2 13 v3 a10 10 0 0 0 20 0 v-3" />
+                                <line x1="12" y1="26" x2="12" y2="32" />
+                                <line x1="6" y1="32" x2="18" y2="32" />
+                            </g>
+                        </svg>
+                    </div>
+
+                    <!-- Close Action Icon -->
+                    <div class="close_icon_main" onclick="closeChatBtnClicked()" title="End Conversation">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:100%; height:100%;">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- TEXT INPUT PANEL (TEXT MODE ACTIVE) -->
+                <div class="massge_input_main" id="usd-input-container" style="display: none;">
+                    <div class="input_box_and_icon_main">
+                        <input type="text" id="usd-text-input" class="chat_input_box" placeholder="Message Here..." onkeypress="handleKeyPress(event)">
+                        <div class="send_button_icon" id="usd-send-btn" onclick="submitTextMessage()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="#D4AF37" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:100%; height:100%;">
+                                <line x1="22" y1="2" x2="11" y2="13"></line>
+                                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- INLINE RATING -->
+                <div id="usd-inline-rating">
+                    <div id="usd-rating-title">Rate your experience</div>
+                    <div class="usd-stars">
+                        <span class="usd-star" onclick="submitRating(1)">★</span>
+                        <span class="usd-star" onclick="submitRating(2)">★</span>
+                        <span class="usd-star" onclick="submitRating(3)">★</span>
+                        <span class="usd-star" onclick="submitRating(4)">★</span>
+                        <span class="usd-star" onclick="submitRating(5)">★</span>
+                    </div>
+                    <div id="usd-rating-thanks">Thank you! Transcript sent to our team.</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- FLOATING BUBBLE BUTTON -->
+        <div id="usd-bubble" class="voice_chat_bot_icon_container" onclick="openChat(false)">
+            <!-- ⚡ Premium Glassy Siri Orb (Matched to your image) ⚡ -->
+            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" class="home_screen_bot_icon">
+                <defs>
+                    <radialGradient id="orbBgHome" cx="50%" cy="50%" r="50%">
+                        <stop offset="0%" stop-color="#111111" />
+                        <stop offset="65%" stop-color="#1b1b1b" />
+                        <stop offset="85%" stop-color="#101010" />
+                        <stop offset="100%" stop-color="#05050a" />
+                    </radialGradient>
+                    <linearGradient id="goldRimHome" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="rgba(212, 175, 55, 0.55)" />
+                        <stop offset="50%" stop-color="rgba(255, 248, 220, 0.75)" />
+                        <stop offset="100%" stop-color="rgba(170, 128, 60, 0.55)" />
+                    </linearGradient>
+                    <linearGradient id="ribbonGrad1Home" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="rgba(212, 175, 55, 0.65)" />
+                        <stop offset="100%" stop-color="rgba(170, 128, 60, 0.05)" />
+                    </linearGradient>
+                    <linearGradient id="ribbonGrad2Home" x1="100%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stop-color="rgba(251, 239, 172, 0.75)" />
+                        <stop offset="100%" stop-color="rgba(196, 157, 71, 0.05)" />
+                    </linearGradient>
+                    <radialGradient id="coreGlowHome" cx="50%" cy="50%" r="50%">
+                        <stop offset="0%" stop-color="#ffffff" stop-opacity="1" />
+                        <stop offset="25%" stop-color="#fbefac" stop-opacity="0.8" />
+                        <stop offset="60%" stop-color="#D4AF37" stop-opacity="0.15" />
+                        <stop offset="100%" stop-color="#D4AF37" stop-opacity="0" />
+                    </radialGradient>
+                    <linearGradient id="reflectGradHome" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stop-color="#ffffff" stop-opacity="0.12" />
+                        <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
+                    </linearGradient>
+                </defs>
+                <circle cx="50" cy="50" r="47" fill="url(#orbBgHome)" stroke="url(#goldRimHome)" stroke-width="0.8" />
+                <g id="fluid-group-home">
+                    <path class="fluid-ribbon r1" d="M18 40 C20 22, 60 12, 80 25 C65 37, 37 37, 18 40 Z" fill="url(#ribbonGrad1Home)" style="mix-blend-mode: screen;" />
+                    <path class="fluid-ribbon r2" d="M15 57 C12 40, 42 45, 57 65 C37 70, 22 67, 15 57 Z" fill="url(#ribbonGrad2Home)" style="mix-blend-mode: screen;" />
+                    <path class="fluid-ribbon r3" d="M35 80 C55 65, 85 55, 82 37 C72 57, 52 72, 35 80 Z" fill="rgba(255,255,255,0.35)" style="mix-blend-mode: screen;" />
+                    <path class="fluid-ribbon r4" d="M30 20 C50 30, 70 50, 55 75 C45 60, 35 40, 30 20 Z" fill="url(#ribbonGrad1Home)" style="mix-blend-mode: screen;" />
+                </g>
+                <circle class="orb-core" cx="50" cy="50" r="22" fill="url(#coreGlowHome)" style="mix-blend-mode: screen;" />
+                <circle cx="50" cy="50" r="47" fill="url(#reflectGradHome)" pointer-events="none" />
+                <path d="M20 11 A32 32 0 0 1 80 11 A37 37 0 0 0 20 11 Z" fill="rgba(255,255,255,0.06)" pointer-events="none" />
+            </svg>
+        </div>
+    </div>
+   
+  <script>
+        /**
+         * ============================================================================
+         * GLOBAL CONFIGURATION & STATE
+         * ============================================================================
+         */
+        const RENDER_BACKEND_URL = "https://nikjoshi123-usd-voice-backend.hf.space";
+        const WS_URL = "wss://nikjoshi123-usd-voice-backend.hf.space";
+
+        let currentAgentState = 'off'; 
+        let chatHistory = [];
+        let socket = null;
+        let globalStream = null;
+        let isVoiceMode = true; 
+        
+        let audioCtx = null;
+        let audioChunkQueue = [];
+        let isAudioPlaying = false;
+        let activeSources = []; 
+        let nextPlayTime = 0;   
+        let isReplyComplete = false; 
+        
+        let activeTag = null; 
+        let activeBotMessageDiv = null; 
+        let activeBotTextSpan = null;
+        let lastBotMessageDiv = null;
+        let isMicSoftwareMuted = true; 
+        let interruptRestartHoldUntil = 0;
+        let liveUserText = "";
+
+       // ⚡ AUDIO RECORDING VARIABLES
+        let mediaRecorder = null;
+        let recordedAudioChunks = [];
+        window.recordedAudioBlob = null;
+        window.recordDest = null;
+      window.uploadedAudioUrl = null; // ⚡ Prevents uploading the same audio twice
+        window.myvad = null; 
+        
+        window.isUserSpeaking = false; // ⚡ FIX: Tracks if the user is currently talking!
+
+        /**
+         * ============================================================================
+         * SILENCE TIMEOUT ENGINE
+         * ============================================================================
+         */
+        window.silenceTimeout = null;
+
+        window.resetSilenceTimer = () => {
+            clearTimeout(window.silenceTimeout);
+            window.silenceTimeout = setTimeout(() => {
+                // ⚡ FIX: The timer will NEVER fire if the user is in the middle of speaking!
+                if (currentAgentState === 'listening' && isVoiceMode && !window.isUserSpeaking) {
+                    updateState('thinking');
+                    if (socket && socket.readyState === WebSocket.OPEN) {
+                        socket.send(JSON.stringify({
+                            type: 'text_input',
+                            text: "SYSTEM INSTRUCTION: The user has been completely silent for 12 seconds. Ask them politely: 'Are you still there? Please let me know if you have any questions.' Do not say anything else.",
+                            history: chatHistory,
+                            isVoiceMode: true
+                        }));
+                    }
+                }
+            }, 12000); // ⚡ Increased to 12 seconds to give patients more time to think
+        };
+
+        window.clearSilenceTimer = () => {
+            clearTimeout(window.silenceTimeout);
+        };
+
+        /**
+         * ============================================================================
+         * SCREEN WAKE LOCK ENGINE
+         * ============================================================================
+         */
+        let wakeLock = null;
+
+        async function requestWakeLock() {
+            if ('wakeLock' in navigator) {
+                try {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    console.log('Screen Wake Lock is active 🌞');
+                } catch (err) { }
+            }
         }
-        renderer.render(scene, camera);
-      });
-    };
-  </script>
+
+        function releaseWakeLock() {
+            if (wakeLock !== null) {
+                wakeLock.release().then(() => { wakeLock = null; });
+            }
+        }
+
+        document.addEventListener('visibilitychange', async () => {
+            if (wakeLock !== null && document.visibilityState === 'visible' && currentAgentState !== 'off') {
+                await requestWakeLock();
+            }
+        });
+
+        /**
+         * ============================================================================
+         * ACTION LINKS CONFIGURATION
+         * ============================================================================
+         */
+        const usdLinks = {
+            '[LINK_HOME]': { url: 'https://ultimatesmiledesign.com/', label: '🏠 Go to Home Page' },
+            '[LINK_DENTISTS]': { url: 'https://ultimatesmiledesign.com/certified-dentists/', label: '📍 Find Nearest Dentist' },
+            '[LINK_VTRYON]': { url: 'https://ultimatesmiledesign.com/virtual-smile-try-on/', label: '✨ Virtual Smile Try-On' }, 
+            '[LINK_BLOGS]': { url: 'https://ultimatesmiledesign.com/virtual-smile-try-on/', label: '📰 Read Our Blogs' }, 
+            '[LINK_GALLERY]': { url: 'https://ultimatesmiledesign.com/gallery/', label: '🖼️ Check Out Gallery' },
+            '[LINK_CONSULT]': { url: 'https://ultimatesmiledesign.com/consult-with-dentist/', label: '👨‍⚕️ Consult Expert Dentist' },
+            '[LINK_CONTACT]': { url: 'https://ultimatesmiledesign.com/contact/', label: '📞 Contact Us' },
+            '[LINK_CONNECT]': { url: 'https://ultimatesmiledesign.com/dentist-connect/', label: '🤝 Become Certified Dentist' }
+        };
+
+        function cleanDisplayText(text = "") {
+            let result = String(text || "");
+            result = result.replace(new RegExp("\\[(hi|bn|ta|te|mr|gu|kn|ml|pa|or|en)-IN\\]", "gi"), "");
+            result = result.replace(new RegExp("<!--[\\s\\S]*?-->", "g"), "");
+            result = result.replace(new RegExp("\\s+", "g"), " ");
+            return result.trim();
+        }
+
+        function updateState(newState, statusText = null) {
+            currentAgentState = newState;
+            const statusBox = document.getElementById('usd-status-box');
+            const interimBox = document.getElementById('usd-interim-text');
+            const voiceTrigger = document.getElementById('usd-voice-trigger-btn');
+            
+            const innerWrap = document.getElementById('usd-chat-inner-wrap');
+            if (innerWrap) {
+                innerWrap.classList.remove('usd-speaking', 'usd-listening', 'usd-thinking');
+                if (newState === 'speaking') {
+                    innerWrap.classList.add('usd-speaking');
+                } else if (newState === 'listening') {
+                    innerWrap.classList.add('usd-listening');
+                } else if (newState === 'thinking') {
+                    innerWrap.classList.add('usd-thinking');
+                }
+            }
+
+            if (statusBox) {
+                if (newState === 'connecting' || newState === 'off') {
+                    if (statusText) statusBox.innerText = statusText;
+                } else if (isVoiceMode) {
+                    statusBox.innerText = "Connected 🟢"; 
+                } else {
+                    statusBox.innerText = "Chat Mode Active. Type below.";
+                }
+            }
+
+            if (newState === 'speaking' || newState === 'listening') {
+                if (voiceTrigger) voiceTrigger.classList.add('is-listening');
+            } else {
+                if (voiceTrigger) voiceTrigger.classList.remove('is-listening');
+            }
+
+            if (newState === 'listening' && isVoiceMode) {
+                isMicSoftwareMuted = false;
+                if (window.myvad) window.myvad.start(); // 🔥 Turn VAD ON
+                if (window.resetSilenceTimer) window.resetSilenceTimer();
+                if (interimBox) { interimBox.innerText = "Listening..."; interimBox.style.color = "#D4AF37"; }
+            } else if (newState === 'speaking' && isVoiceMode) {
+                isMicSoftwareMuted = true; // ⚡ STOP ALL INTERRUPTIONS (Mute Mic)
+                if (window.myvad) window.myvad.pause(); // ⚡ TURN VAD OFF while bot speaks
+                if (window.clearSilenceTimer) window.clearSilenceTimer();
+            } else {
+                isMicSoftwareMuted = true;
+                if (window.myvad) window.myvad.pause(); // 🔥 Turn VAD OFF
+                if (window.clearSilenceTimer) window.clearSilenceTimer();
+            }
+
+            if (newState === 'thinking') {
+                if (interimBox) {
+                    interimBox.innerText = "Answering...";
+                    interimBox.style.color = "#ffffff";
+                }
+            }
+
+            if (!isVoiceMode && interimBox && newState !== 'thinking') {
+                interimBox.innerText = "";
+            }
+        }
+
+        async function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function detectLocalTagFromText(input = '') {
+            const text = cleanDisplayText(String(input || "").toLowerCase());
+            if (text.includes("end chat") || text.includes("goodbye") || text.includes("bye") || text.includes("take care")) return "[END_CHAT]";
+            if (text.includes("virtual smile") || text.includes("try on") || text.includes("try-on") || text.includes("smile try")) return "[LINK_VTRYON]";
+            if (text.includes("certified dentist") || text.includes("nearest dentist") || text.includes("find dentist")) return "[LINK_DENTISTS]";
+            if (text.includes("consultation") || text.includes("consult") || text.includes("schedule") || text.includes("appointment")) return "[LINK_CONSULT]";
+            if (text.includes("contact") || text.includes("reach out") || text.includes("get in touch") || text.includes("call us")) return "[LINK_CONTACT]";
+            if (text.includes("dentist connect") || text.includes("become certified dentist") || text.includes("collaborate")) return "[LINK_CONNECT]";
+            if (text.includes("gallery") || text.includes("results") || text.includes("before and after")) return "[LINK_GALLERY]";
+            return null;
+        }
+
+        function appendLinkButton(targetEl, tag) {
+            if (!targetEl || !tag || !usdLinks[tag]) return;
+            const btn = document.createElement('button');
+            btn.className = 'usd-link-card';
+            btn.innerText = usdLinks[tag].label;
+            btn.onclick = () => handleLinkClick(tag);
+            targetEl.appendChild(btn);
+        }
+
+        function saveHistory() {
+            sessionStorage.setItem('usd_chat_history', JSON.stringify(chatHistory));
+        }
+
+        function addUserHistoryIfNew(text) {
+            const clean = cleanDisplayText(text);
+            if (!clean) return;
+            const last = chatHistory[chatHistory.length - 1];
+            if (last && last.role === 'user' && last.parts && last.parts[0] && clean === last.parts[0].text) return;
+            chatHistory.push({ role: "user", parts: [{ text: clean }] });
+            if (chatHistory.length > 6) chatHistory = chatHistory.slice(-6);
+            saveHistory();
+        }
+
+        function checkBotFinishedSpeaking() {
+            if (isReplyComplete && audioChunkQueue.length === 0 && activeSources.length === 0) {
+                isReplyComplete = false;
+                nextPlayTime = 0; 
+                
+                if (activeTag === '[END_CHAT]') {
+                    setTimeout(() => closeChat(true), 2000);
+                } else {
+                    updateState('cooldown');
+                    setTimeout(() => {
+                        if (currentAgentState === 'cooldown') {
+                            updateState('listening');
+                        }
+                    }, 400); 
+                }
+                activeTag = null;
+            }
+        }
+
+        async function playAudioChunk(base64) {
+            if (!base64) return;
+            updateState('speaking');
+
+            try {
+                const binaryString = window.atob(base64);
+                const bytes = new Uint8Array(binaryString.length);
+                for (let i = 0; i < binaryString.length; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                }
+                
+                const audioBuffer = await audioCtx.decodeAudioData(bytes.buffer);
+                const source = audioCtx.createBufferSource();
+                source.buffer = audioBuffer;
+                source.connect(audioCtx.destination); 
+                
+                // ⚡ RECORD BOT AUDIO
+                if (window.recordDest) {
+                    source.connect(window.recordDest);
+                }
+
+                source.playbackRate.value = 1.0;
+                
+                if (nextPlayTime < audioCtx.currentTime) {
+                    nextPlayTime = audioCtx.currentTime + 0.05; 
+                }
+                
+                source.start(nextPlayTime);
+                nextPlayTime += audioBuffer.duration; 
+                
+                window.activeAudioSourceNode = source;
+                activeSources.push(source);
+                
+                source.onended = () => {
+                    activeSources = activeSources.filter(s => s !== source);
+                    checkBotFinishedSpeaking(); 
+                };
+            } catch (e) {
+                console.error("Audio Decode error:", e);
+            }
+        }
+
+        async function processAudioQueue() {
+            if (isAudioPlaying) return;
+            isAudioPlaying = true;
+            while (audioChunkQueue.length > 0) {
+                 const chunk = audioChunkQueue.shift(); 
+                 await playAudioChunk(chunk.audioBase64);
+            }
+            isAudioPlaying = false;
+            checkBotFinishedSpeaking(); 
+            setTimeout(() => {
+                if (currentAgentState === 'speaking' && activeSources.length === 0) {
+                    isReplyComplete = false;
+                    updateState('listening');
+                }
+            }, 3000);
+        }
+
+        function toggleChatMode() {
+            isVoiceMode = !isVoiceMode;
+            
+            const textControls = document.getElementById('usd-input-container');
+            const voiceFooter = document.getElementById('usd-voice-controls-footer');
+            const micText = document.getElementById('usd-interim-text');
+            const inputInner = document.querySelector('.input_box_and_icon_main');
+            
+            const textMicBtn = document.getElementById('usd-text-mic-btn');
+            const textCloseBtn = document.getElementById('usd-text-close-btn');
+            
+            if (isVoiceMode) {
+                if (textControls) textControls.style.display = "none";
+                if (voiceFooter) voiceFooter.style.display = "flex";
+                if (micText) micText.style.display = "block";
+                
+                if (textMicBtn) textMicBtn.style.display = "none";
+                if (textCloseBtn) textCloseBtn.style.display = "none";
+                
+                updateState('listening');
+            } else {
+                if (textControls) textControls.style.display = "block";
+                if (inputInner) inputInner.style.display = "flex";
+                if (voiceFooter) voiceFooter.style.display = "none";
+                if (micText) micText.style.display = "none";
+                
+                if (textMicBtn) textMicBtn.style.display = "flex";
+                if (textCloseBtn) textCloseBtn.style.display = "flex";
+                
+                updateState('listening');
+            }
+            sessionStorage.setItem('usd_is_voice_mode', isVoiceMode.toString());
+        }
+
+        async function openChat(isRestore = false) {
+            initAudio();
+            requestWakeLock();
+            interruptRestartHoldUntil = 0;
+            const container = document.getElementById('usd-chat-container');
+            const bubble = document.getElementById('usd-bubble');
+            
+            // ⚡ REOPEN FIX: Always allow opening if the widget is hidden!
+            const isClosed = container && (container.style.display === 'none' || !container.classList.contains('active'));
+            
+            if (currentAgentState === 'off' || isRestore || isClosed) {
+                currentAgentState = 'off'; 
+                
+                // Clear audio queue from any previous session so it doesn't overlap
+                audioChunkQueue = [];
+                activeSources.forEach(source => { try { source.stop(); } catch(e) {} });
+                activeSources = [];
+                isAudioPlaying = false;
+                
+                if (bubble) {
+                    bubble.style.display = 'none'; 
+                    bubble.classList.add('hidden');
+                }
+
+                if (container) {
+                    container.style.display = 'flex';
+                    container.classList.add('active');
+                }
+                
+                document.getElementById('usd-input-container').style.display = 'none';
+                document.getElementById('usd-voice-controls-footer').style.display = 'flex';
+                document.getElementById('usd-inline-rating').style.display = 'none';
+                
+                if (isRestore) {
+                    chatHistory = JSON.parse(sessionStorage.getItem('usd_chat_history') || '[]');
+                    isVoiceMode = sessionStorage.getItem('usd_is_voice_mode') !== 'false';
+                    
+                    const textControls = document.getElementById('usd-input-container');
+                    const voiceFooter = document.getElementById('usd-voice-controls-footer');
+                    const inputInner = document.querySelector('.input_box_and_icon_main');
+                    const textMicBtn = document.getElementById('usd-text-mic-btn');
+                    const textCloseBtn = document.getElementById('usd-text-close-btn');
+
+                    if (isVoiceMode) {
+                        if (textControls) textControls.style.display = 'none';
+                        if (voiceFooter) voiceFooter.style.display = 'flex';
+                        if (textMicBtn) textMicBtn.style.display = "none";
+                        if (textCloseBtn) textCloseBtn.style.display = "none";
+                    } else {
+                        if (textControls) textControls.style.display = 'block';
+                        if (inputInner) inputInner.style.display = 'flex';
+                        if (voiceFooter) voiceFooter.style.display = 'none';
+                        if (textMicBtn) textMicBtn.style.display = "flex";
+                        if (textCloseBtn) textCloseBtn.style.display = "flex";
+                    }
+                    
+                    document.getElementById('usd-chat-log').innerHTML = ""; 
+                    chatHistory.forEach(turn => {
+                        const sender = turn.role === 'model' ? 'bot' : 'user';
+                        let cleanText = cleanDisplayText(turn.parts[0].text);
+                        let foundTag = null;
+                        if (turn.role === 'model') { foundTag = detectLocalTagFromText(cleanText); }
+                        logMessage(sender, cleanText, foundTag);
+                    });
+
+                    updateState('thinking');
+                    await startWebSocket();
+                } else {
+                    document.getElementById('usd-chat-log').innerHTML = ""; 
+                    chatHistory = [];
+                    activeBotMessageDiv = null;
+                    activeBotTextSpan = null;
+                    lastBotMessageDiv = null;
+                    
+                    updateState('connecting', "Calling assistant... 🟡");
+                    await new Promise(resolve => setTimeout(resolve, 1200));
+                    
+                    updateState('connecting', "Connected 🟢");
+                    await new Promise(resolve => setTimeout(resolve, 600));
+                    
+                    sessionStorage.setItem('usd_chat_active', 'true');
+                    await startWebSocket();
+                }
+            }
+        }
+
+        async function startWebSocket() {
+            try {
+                socket = new WebSocket(WS_URL);
+
+                socket.onopen = async () => {
+                    globalStream = await navigator.mediaDevices.getUserMedia({ 
+                        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+                    });
+
+                    // ⚡ AUDIO RECORDING INITIALIZATION
+                    await initAudio(); 
+                    window.recordDest = audioCtx.createMediaStreamDestination();
+                    const micToRecorder = audioCtx.createMediaStreamSource(globalStream);
+                    micToRecorder.connect(window.recordDest);
+
+                    recordedAudioChunks = [];
+                    try {
+                        mediaRecorder = new MediaRecorder(window.recordDest.stream);
+                        mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedAudioChunks.push(e.data); };
+                        mediaRecorder.onstop = () => {
+                            const mimeType = mediaRecorder.mimeType || 'audio/webm';
+                            window.recordedAudioBlob = new Blob(recordedAudioChunks, { type: mimeType });
+                        };
+                        mediaRecorder.start(1000);
+                    } catch(e) { console.error("Recorder failed:", e); }
+
+                    const streamCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+                    const source = streamCtx.createMediaStreamSource(globalStream);
+                    
+                    const bufferSize = 4096;
+                    const processor = streamCtx.createScriptProcessor(bufferSize, 1, 1);
+                    const analyser = streamCtx.createAnalyser();
+                    analyser.fftSize = 512;
+
+                    const silenceGain = streamCtx.createGain();
+                    silenceGain.gain.value = 0;
+
+                    source.connect(analyser);
+                    source.connect(processor);
+                    processor.connect(silenceGain);
+                    silenceGain.connect(streamCtx.destination);
+
+                    if (chatHistory.length === 0) {
+                        updateState('thinking'); 
+                        if (socket.readyState === WebSocket.OPEN) {
+                            socket.send(JSON.stringify({ 
+                                type: 'text_input', 
+                                text: "SYSTEM INSTRUCTION: Start the conversation by warmly saying EXACTLY this specific phrase and absolutely nothing else: 'Namaste! i Am Riya USD Consultant, How can we assist you today? Let's start with your beautiful name, what is your name?'", 
+                                history: [],
+                                isVoiceMode: isVoiceMode 
+                            }));
+                        }
+                    } else {
+                        updateState('listening');
+                    }
+
+                   let isRecording = false;
+                    
+                // ⚡ PCM STREAMER: Streams constantly to backend only when VAD permits it
+                    processor.onaudioprocess = (e) => {
+                        if (isMicSoftwareMuted || !isRecording) return;
+                        
+                        const inputData = e.inputBuffer.getChannelData(0);
+                        const pcm16 = new Int16Array(inputData.length);
+                        for (let i = 0; i < inputData.length; i++) {
+                            // ⚡ MAGIC VOLUME BOOST: Multiplies mic volume by 3.0 so Gemini hears every word!
+                            let sample = inputData[i] * 3.0; 
+                            if (sample > 1) sample = 1; else if (sample < -1) sample = -1;
+                            pcm16[i] = sample * 32767;
+                        }
+                        
+                        if (socket && socket.readyState === WebSocket.OPEN && isRecording) {
+                            socket.send(pcm16.buffer); 
+                        }
+                    };
+                 // ⚡ HIGH-END SILERO VAD INTEGRATION
+                    try {
+                        window.myvad = await vad.MicVAD.new({
+                            stream: globalStream,
+                            positiveSpeechThreshold: 0.4,  
+                            negativeSpeechThreshold: 0.3,
+                            minSpeechFrames: 3,            
+                            preSpeechPadFrames: 10,        
+                            // ⚡ MAGIC SPEED FIX: Lowered from 45 to 15! 
+                            // It now only waits 450 milliseconds after you stop talking, so it replies instantly!
+                            redemptionFrames: 15,          
+                            onSpeechStart: () => {
+                                // ⚡ DISABLED BARGE-IN: If bot is speaking, completely ignore the mic
+                                if (isMicSoftwareMuted || currentAgentState === 'speaking' || isAudioPlaying) return; 
+                                
+                                window.isUserSpeaking = true; // ⚡ Mutes the Silence Timer while you talk!
+                                isRecording = true;
+                                updateState('listening');
+                                if (socket && socket.readyState === WebSocket.OPEN) {
+                                    socket.send(JSON.stringify({ type: 'start_of_speech' }));
+                                }
+                            },
+                            onSpeechEnd: (audio) => {
+                                window.isUserSpeaking = false; // ⚡ Turns the Silence Timer back on
+                                if (isMicSoftwareMuted || !isRecording) return;
+                                isRecording = false;
+                                updateState('thinking');
+                                if (socket && socket.readyState === WebSocket.OPEN) {
+                                    socket.send(JSON.stringify({ 
+                                        type: 'process_final', 
+                                        history: chatHistory, 
+                                        isVoiceMode: isVoiceMode 
+                                    }));
+                                }
+                            },
+                            onVADMisfire: () => {
+                                window.isUserSpeaking = false; // ⚡ Turns the Silence Timer back on
+                                if (isRecording) {
+                                    isRecording = false;
+                                    updateState('listening');
+                                }
+                            }
+                        });
+                        window.myvad.start();
+                    } catch (e) {
+                        console.error("Silero VAD Initialization Failed:", e);
+                    }
+                };
+
+                socket.onmessage = async (event) => {
+                    const data = JSON.parse(event.data);
+                    
+                    if (data.type === 'idle' || data.type === 'error') {
+                        if (data.type === 'error') console.error("Backend Error:", data.error);
+                        liveUserText = ""; 
+                        isReplyComplete = false;
+                        audioChunkQueue = [];
+
+                        const interimBox = document.getElementById('usd-interim-text');
+                        if (interimBox) interimBox.innerText = "";
+                        updateState('listening');
+                    }
+                    else if (data.type === 'user_spoken_text') {
+                        const cleanUserText = cleanDisplayText(data.text || "");
+                        if (cleanUserText) {
+                            const last = chatHistory[chatHistory.length - 1];
+                            const alreadyInHistory = last && last.role === 'user' && last.parts && last.parts[0] && cleanUserText === last.parts[0].text;
+                            if (!alreadyInHistory) {
+                                logMessage('user', cleanUserText);
+                                addUserHistoryIfNew(cleanUserText);
+                            }
+                            liveUserText = ""; 
+                            const interimBox = document.getElementById('usd-interim-text');
+                            if (interimBox && interimBox.innerText.includes("You:")) {
+                                interimBox.innerText = "Answering...";
+                                interimBox.style.color = "#ffffff";
+                            }
+                        }
+                    }
+                    else if (data.type === 'text_stream') {
+                        const streamedText = cleanDisplayText(data.text || "");
+                        if (!streamedText) return; 
+
+                        if (!activeBotMessageDiv) {
+                            activeBotMessageDiv = logMessage('bot', streamedText);
+                            activeBotTextSpan = activeBotMessageDiv.querySelector('.usd-msg-text');
+                        } else if (activeBotTextSpan) {
+                            activeBotTextSpan.innerText = streamedText;
+                        }
+
+                        const previewTag = data.tag || detectLocalTagFromText(streamedText);
+                        if (previewTag && usdLinks[previewTag]) {
+                            if (!activeBotMessageDiv.querySelector('.usd-link-card')) {
+                                appendLinkButton(activeBotMessageDiv, previewTag);
+                            }
+                        }
+
+                        const log = document.getElementById('usd-chat-log');
+                        log.scrollTop = log.scrollHeight;
+                    }
+                    else if (data.type === 'bot_spoken_text') {
+                        // ⚡ BACKGROUND TEXT SYNC: Replaces "..." with the exact transcribed bot words
+                        const finalText = cleanDisplayText(data.text);
+                        if (finalText && lastBotMessageDiv) {
+                            const span = lastBotMessageDiv.querySelector('.usd-msg-text');
+                            if (span) span.innerText = finalText;
+                            
+                            chatHistory.push({ role: "model", parts: [{ text: finalText }] });
+                            if (chatHistory.length > 6) chatHistory = chatHistory.slice(-6);
+                            saveHistory();
+
+                            if (data.tag && usdLinks[data.tag]) {
+                                if (!lastBotMessageDiv.querySelector('.usd-link-card')) {
+                                    appendLinkButton(lastBotMessageDiv, data.tag);
+                                }
+                                activeTag = data.tag;
+                            }
+                            
+                            const log = document.getElementById('usd-chat-log');
+                            log.scrollTop = log.scrollHeight;
+                        }
+                    }
+                    else if (data.type === 'audio_chunk') {
+                        if (isVoiceMode) {
+                            audioChunkQueue.push(data);
+                            processAudioQueue();
+                        }
+                    }
+                    else if (data.type === 'reply_complete') {
+                        isReplyComplete = true; 
+                        liveUserText = ""; 
+                        const interimBox = document.getElementById('usd-interim-text');
+                        if (interimBox) { interimBox.innerText = ""; }
+
+                        const botTarget = activeBotMessageDiv; 
+                        activeBotMessageDiv = null;
+                        activeBotTextSpan = null;
+
+                        const finalText = cleanDisplayText(data.botText || "").trim();
+                        const finalTag = data.tag || detectLocalTagFromText(finalText) || detectLocalTagFromText(data.userText || "");
+
+                        if (finalText) {
+                            if (botTarget) {
+                                const span = botTarget.querySelector('.usd-msg-text');
+                                if (span) span.innerText = finalText;
+                            } else {
+                                lastBotMessageDiv = logMessage('bot', finalText);
+                            }
+
+                            // Do not save "..." to memory, it waits for bot_spoken_text
+                            if (finalText !== "...") {
+                                const last = chatHistory[chatHistory.length - 1];
+                                if (!(last && last.role === 'model' && last.parts && last.parts[0] && last.parts[0].text === finalText)) {
+                                    chatHistory.push({ role: "model", parts: [{ text: finalText }] });
+                                    if (chatHistory.length > 6) chatHistory = chatHistory.slice(-6);
+                                    saveHistory();
+                                }
+                            }
+                        } else if (botTarget) {
+                            botTarget.remove();
+                        }
+
+                        activeTag = finalTag;
+                        
+                        const finalBotTarget = botTarget || lastBotMessageDiv;
+                        if (activeTag && usdLinks[activeTag] && finalBotTarget && finalText !== "...") {
+                            if (!finalBotTarget.querySelector('.usd-link-card')) {
+                                appendLinkButton(finalBotTarget, activeTag);
+                            }
+                            const log = document.getElementById('usd-chat-log');
+                            log.scrollTop = log.scrollHeight;
+                        }
+
+                        if (!isVoiceMode) {
+                            updateState('listening');
+                            if (activeTag === '[END_CHAT]') setTimeout(() => closeChat(true), 2000);
+                        } else {
+                            checkBotFinishedSpeaking(); 
+                        }
+                    }
+                };
+                socket.onerror = () => { updateState('listening'); };
+            } catch (err) {
+                updateState('listening');
+            }
+        }
+
+        function closeChatBtnClicked() {
+            document.getElementById('usd-end-confirm-overlay').style.display = 'flex';
+        }
+
+     function confirmEndChat(isYes) {
+            document.getElementById('usd-end-confirm-overlay').style.display = 'none';
+            if (isYes) {
+                updateState('thinking');
+                
+                audioChunkQueue = [];
+                activeSources.forEach(source => { try { source.stop(); } catch(e) {} });
+                activeSources = [];
+                isAudioPlaying = false;
+                
+                // ⚡ GUARANTEED EMAIL TRIGGER: Overwrites the stop event so it sends the email the exact millisecond the audio file is ready!
+                if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                    mediaRecorder.onstop = () => {
+                        const mimeType = mediaRecorder.mimeType || 'audio/webm';
+                        window.recordedAudioBlob = new Blob(recordedAudioChunks, { type: mimeType });
+                        submitChatData("Call Ended (No Star Given)"); // Instantly sends!
+                    };
+                    mediaRecorder.stop();
+                } else {
+                    submitChatData("Call Ended (No Star Given)");
+                }
+
+                const goodbyeText = "Thanks for talking with Ultimate Smile Design. Please feel free to check out our reviews or reach out to us.";
+                logMessage('bot', goodbyeText);
+                
+                if (isVoiceMode) {
+                    fetch(`${RENDER_BACKEND_URL}/api/tts`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ text: goodbyeText, lang: 'en-IN' })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        isReplyComplete = true; 
+                        audioChunkQueue.push(data);
+                        processAudioQueue(); 
+                    })
+                    .catch(e => console.error("TTS Error:", e));
+                }
+
+                closeChat(true);
+            }
+        }
+// ⚡ REUSABLE EMAIL FUNCTION (Uploads audio and sends transcript)
+        async function submitChatData(ratingLabel) {
+            try {
+                let transcript = "No chat history recorded.";
+                const allMessages = document.querySelectorAll('#usd-chat-log > div');
+                if (allMessages.length > 0) {
+                    transcript = Array.from(allMessages).map(msgDiv => {
+                        const text = msgDiv.querySelector('.usd-msg-text')?.innerText || "";
+                        if (msgDiv.classList.contains('user_message')) return `User: ${text}`;
+                        if (msgDiv.classList.contains('bot_message')) return `Assistant: ${text}`;
+                        return `System: ${text}`;
+                    }).join('\n\n');
+                }
+
+                let audioUrlText = "";
+                
+                // ⚡ UPLOAD AUDIO (With CORS-Safe, Long-Term Providers!)
+                if (!window.uploadedAudioUrl && window.recordedAudioBlob && window.recordedAudioBlob.size > 0) {
+                    
+                    // Attempt 1: GoFile.io (Valid for 10 Days!)
+                    try {
+                        const serverReq = await fetch('https://api.gofile.io/servers');
+                        const serverData = await serverReq.json();
+                        if (serverData.status === 'ok') {
+                            const uploadServer = serverData.data.servers[0].name;
+                            const form = new FormData();
+                            form.append("file", window.recordedAudioBlob, "recording.mp3");
+                            const uploadRes = await fetch(`https://${uploadServer}.gofile.io/contents/uploadfile`, { method: 'POST', body: form });
+                            const uploadData = await uploadRes.json();
+                            if (uploadData.status === 'ok') {
+                                window.uploadedAudioUrl = uploadData.data.downloadPage;
+                                audioUrlText = `\n\n🎙️ RAW AUDIO RECORDING (Valid for 10 Days):\n${window.uploadedAudioUrl}`;
+                            }
+                        }
+                    } catch(e) { console.log("GoFile skipped"); }
+
+                    // Attempt 2: Pomf.la (Valid for 30 Days!)
+                    if (!window.uploadedAudioUrl) {
+                        try {
+                            const form = new FormData();
+                            form.append("files[]", window.recordedAudioBlob, "recording.mp3");
+                            const res = await fetch('https://pomf2.lain.la/upload.php', { method: 'POST', body: form });
+                            if (res.ok) {
+                                const data = await res.json();
+                                if (data && data.success) {
+                                    window.uploadedAudioUrl = data.files[0].url;
+                                    audioUrlText = `\n\n🎙️ RAW AUDIO RECORDING (Valid for 30 Days):\n${window.uploadedAudioUrl}`;
+                                }
+                            }
+                        } catch(e) { console.log("Pomf skipped"); }
+                    }
+                    
+                    // Attempt 3: Tmpfiles (1 Hour Backup)
+                    if (!window.uploadedAudioUrl) {
+                        try {
+                            const form = new FormData(); form.append("file", window.recordedAudioBlob, "recording.mp3");
+                            const res = await fetch('https://tmpfiles.org/api/v1/upload', { method: 'POST', body: form });
+                            const data = await res.json();
+                            if (data && data.data && data.data.url) {
+                                window.uploadedAudioUrl = data.data.url.replace('tmpfiles.org/', 'tmpfiles.org/dl/');
+                                audioUrlText = `\n\n🎙️ RAW AUDIO RECORDING (Valid for 60 minutes):\n${window.uploadedAudioUrl}`;
+                            }
+                        } catch(e) { console.log("Tmpfiles failed"); }
+                    }
+                } else if (window.uploadedAudioUrl) {
+                    audioUrlText = `\n\n🎙️ RAW AUDIO RECORDING:\n${window.uploadedAudioUrl}`;
+                }
+
+                // ⚡ SEND EMAIL VIA JSON
+                fetch('https://api.web3forms.com/submit', {
+                    method: 'POST',
+                    keepalive: true, 
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    body: JSON.stringify({ 
+                        access_key: "c1a373a7-407e-47f4-8403-be692c2f3eff", 
+                        subject: `🌟 New USD Voice Agent Rating: ${ratingLabel}`, 
+                        from_name: "Ultimate Smile Voice Agent", 
+                        email: "noreply@ultimatesmiledesign.com",
+                        message: `Transcript:\n\n${transcript}${audioUrlText}` 
+                    })
+                }).catch(e => console.error("Email API Error:", e));
+                
+            } catch(e) { console.error("Submit logic error:", e); }
+        }
+        function closeChat(showRating = false) {
+            updateState('off');
+            
+            if (window.myvad) {
+                window.myvad.pause();
+                window.myvad = null;
+            }
+            releaseWakeLock(); 
+            
+            if (socket) {
+                socket.close();
+                socket = null;
+            }
+            if (globalStream) {
+                globalStream.getTracks().forEach(track => track.stop());
+                globalStream = null;
+            }
+            
+            // MediaRecorder stop is handled natively in confirmEndChat now!
+
+            sessionStorage.removeItem('usd_chat_active');
+            
+            const bubble = document.getElementById('usd-bubble');
+            const container = document.getElementById('usd-chat-container');
+
+            if (showRating) {
+                document.getElementById('usd-input-container').style.display = 'none';
+                document.getElementById('usd-voice-controls-footer').style.display = 'none';
+                document.getElementById('usd-inline-rating').style.display = 'block';
+                logMessage('system', 'The chat has ended. Please rate your experience below.');
+            } else {
+                if (container) {
+                    container.style.display = 'none';
+                    container.classList.remove('active');
+                }
+                if (bubble) {
+                    bubble.style.display = 'flex'; 
+                    bubble.classList.remove('hidden');
+                }
+
+                document.getElementById('usd-inline-rating').style.display = 'none';
+                document.getElementById('usd-rating-thanks').style.display = 'none';
+                document.querySelectorAll('.usd-star').forEach(s => { 
+                    s.style.color = '#333333'; 
+                    s.style.textShadow = '0 2px 4px rgba(0,0,0,0.5)'; 
+                });
+                
+                // Clear the uploaded URL so the next session uploads fresh audio!
+                window.uploadedAudioUrl = null; 
+            }
+        }
+
+        async function submitRating(stars) {
+            const starElements = document.querySelectorAll('.usd-star');
+            starElements.forEach((s, index) => {
+                s.style.color = index < stars ? '#FFD700' : '#444';
+                s.style.textShadow = index < stars ? '0 0 10px rgba(255, 215, 0, 0.6)' : '0 2px 4px rgba(0,0,0,0.5)';
+            });
+            document.getElementById('usd-rating-thanks').style.display = 'block';
+
+            setTimeout(() => { closeChat(false); }, 2500);
+
+            // ⚡ Update you with the new Star rating!
+            submitChatData(`${stars}/5 Stars`);
+        }
+        async function submitTextMessage() {
+            const inputEl = document.getElementById('usd-text-input');
+            const userText = cleanDisplayText(inputEl.value.trim());
+            if (!userText || currentAgentState === 'thinking' || currentAgentState === 'connecting') return;
+
+            inputEl.value = ''; 
+
+            updateState('thinking');
+            
+            logMessage('user', userText);
+            addUserHistoryIfNew(userText);
+
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({ 
+                    type: 'text_input', 
+                    text: userText, 
+                    history: chatHistory,
+                    isVoiceMode: isVoiceMode 
+                }));
+            }
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault(); 
+                submitTextMessage();
+            }
+        }
+
+        async function handleLinkClick(tag) {
+            const linkInfo = usdLinks[tag];
+            if (!linkInfo) return;
+            
+            logMessage('bot', "Redirecting you now...");
+            chatHistory.push({ role: "model", parts: [{ text: "Redirecting you now..." }] });
+            if (chatHistory.length > 6) chatHistory = chatHistory.slice(-6);
+            saveHistory();
+
+            window.open(linkInfo.url, '_blank');
+            updateState('listening');
+        }
+        
+        function logMessage(sender, text, tag = null) {
+            const log = document.getElementById('usd-chat-log');
+            const msgDiv = document.createElement('div');
+            
+            if (sender === 'user') {
+                msgDiv.className = 'user_message';
+            } else if (sender === 'bot') {
+                msgDiv.className = 'bot_message';
+            } else {
+                msgDiv.className = 'msg msg-system';
+            }
+            
+            const p = document.createElement('p');
+            p.className = 'usd-msg-text';
+            
+            if (sender === 'user') p.innerText = text;
+            else if (sender === 'bot') p.innerText = text;
+            else p.innerText = text; 
+            
+            msgDiv.appendChild(p);
+
+            if (tag && usdLinks[tag]) {
+                const btn = document.createElement('button');
+                btn.className = 'usd-link-card';
+                btn.innerText = usdLinks[tag].label;
+                btn.onclick = () => handleLinkClick(tag);
+                msgDiv.appendChild(btn);
+            }
+
+            log.appendChild(msgDiv);
+            log.scrollTop = log.scrollHeight;
+
+            if (sender === 'bot') {
+                lastBotMessageDiv = msgDiv;
+            }
+
+            return msgDiv;
+        }
+
+        // Attach to window so HTML inline events can access them
+        window.openChat = openChat;
+        window.closeChat = closeChat;
+        window.confirmEndChat = confirmEndChat;
+        window.toggleChatMode = toggleChatMode;
+        window.closeChatBtnClicked = closeChatBtnClicked;
+        window.submitTextMessage = submitTextMessage;
+        window.submitRating = submitRating;
+        window.handleKeyPress = handleKeyPress;
+        window.handleLinkClick = handleLinkClick;
+    </script>
 </body>
 </html>
